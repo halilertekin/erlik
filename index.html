@@ -58,6 +58,11 @@
                     <span class="hidden sm:inline">Dışa Aktar</span>
                 </button>
 
+                
+                <button onclick="openPomodoroModal()" id="btnPomodoro" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5">
+                    <span>🍅</span>
+                    <span id="headerPomodoroDisplay">Pomodoro (25m)</span>
+                </button>
                 <button onclick="openMailModal()" id="btnEmail" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                     Mail Raporu
@@ -210,6 +215,37 @@
         </div>
     </div>
 
+    
+    <!-- MODERN MODAL: Pomodoro Timer -->
+    <div id="pomodoroModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="glass border border-slate-700/80 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl relative text-center">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">🍅</div>
+                    <h3 class="text-base font-bold text-slate-100">ERLİK Pomodoro Focus</h3>
+                </div>
+                <button onclick="closePomodoroModal()" class="text-slate-400 hover:text-slate-200 text-lg">&times;</button>
+            </div>
+
+            <!-- Pomodoro Clock Display -->
+            <div class="py-6">
+                <div id="pomodoroMode" class="text-xs uppercase font-semibold text-rose-400 tracking-wider mb-2">🔥 ODAKLANMA MODU</div>
+                <div id="pomodoroTimer" class="text-6xl font-bold font-mono text-white tracking-tight">25:00</div>
+                <p id="pomodoroInfo" class="text-xs text-slate-400 mt-2">25 dakika derin odaklanma, ardından 5 dakika dinlenme.</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-center gap-3">
+                <button onclick="togglePomodoro()" id="btnPomodoroToggle" class="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold tracking-wide transition shadow-lg shadow-rose-600/20">
+                    Başlat
+                </button>
+                <button onclick="resetPomodoro()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+                    Sıfırla
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODERN TOAST NOTIFICATION -->
     <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition duration-300 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-xl shadow-2xl text-xs flex items-center gap-2">
         <span id="toastIcon">ℹ️</span>
@@ -251,6 +287,81 @@
             if (mins < 60) return mins + ' dk';
             const hrs = (mins / 60).toFixed(1);
             return hrs + ' sa';
+        }
+
+        
+        // POMODORO ENGINE
+        let pomodoroTime = 25 * 60;
+        let pomodoroTimerInterval = null;
+        let pomodoroIsRunning = false;
+        let pomodoroIsBreak = false;
+
+        function openPomodoroModal() {
+            document.getElementById('pomodoroModal').classList.remove('hidden');
+        }
+
+        function closePomodoroModal() {
+            document.getElementById('pomodoroModal').classList.add('hidden');
+        }
+
+        function updatePomodoroDisplay() {
+            const mins = Math.floor(pomodoroTime / 60).toString().padStart(2, '0');
+            const secs = (pomodoroTime % 60).toString().padStart(2, '0');
+            const str = mins + ':' + secs;
+            document.getElementById('pomodoroTimer').innerText = str;
+            document.getElementById('headerPomodoroDisplay').innerText = (pomodoroIsRunning ? '⏳ ' : '🍅 ') + str;
+        }
+
+        function togglePomodoro() {
+            const btn = document.getElementById('btnPomodoroToggle');
+            if (pomodoroIsRunning) {
+                clearInterval(pomodoroTimerInterval);
+                pomodoroIsRunning = false;
+                btn.innerText = 'Devam Et';
+                btn.className = 'px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold tracking-wide transition shadow-lg shadow-emerald-600/20';
+            } else {
+                pomodoroIsRunning = true;
+                btn.innerText = 'Duraklat';
+                btn.className = 'px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold tracking-wide transition shadow-lg shadow-amber-600/20';
+                pomodoroTimerInterval = setInterval(() => {
+                    if (pomodoroTime > 0) {
+                        pomodoroTime--;
+                        updatePomodoroDisplay();
+                    } else {
+                        clearInterval(pomodoroTimerInterval);
+                        pomodoroIsRunning = false;
+                        if (!pomodoroIsBreak) {
+                            pomodoroIsBreak = true;
+                            pomodoroTime = 5 * 60;
+                            document.getElementById('pomodoroMode').innerText = '☕ MOLA ZAMANI';
+                            document.getElementById('pomodoroMode').className = 'text-xs uppercase font-semibold text-emerald-400 tracking-wider mb-2';
+                            showToast('Tebrikler! 25 dk odaklanma bitti. Şimdi 5 dk mola!', '☕');
+                        } else {
+                            pomodoroIsBreak = false;
+                            pomodoroTime = 25 * 60;
+                            document.getElementById('pomodoroMode').innerText = '🔥 ODAKLANMA MODU';
+                            document.getElementById('pomodoroMode').className = 'text-xs uppercase font-semibold text-rose-400 tracking-wider mb-2';
+                            showToast('Mola bitti! Yeni odak turuna hazır mısın?', '🎯');
+                        }
+                        btn.innerText = 'Başlat';
+                        updatePomodoroDisplay();
+                    }
+                }, 1000);
+            }
+            updatePomodoroDisplay();
+        }
+
+        function resetPomodoro() {
+            clearInterval(pomodoroTimerInterval);
+            pomodoroIsRunning = false;
+            pomodoroIsBreak = false;
+            pomodoroTime = 25 * 60;
+            document.getElementById('pomodoroMode').innerText = '🔥 ODAKLANMA MODU';
+            document.getElementById('pomodoroMode').className = 'text-xs uppercase font-semibold text-rose-400 tracking-wider mb-2';
+            const btn = document.getElementById('btnPomodoroToggle');
+            btn.innerText = 'Başlat';
+            btn.className = 'px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold tracking-wide transition shadow-lg shadow-rose-600/20';
+            updatePomodoroDisplay();
         }
 
         async function openMailModal() {

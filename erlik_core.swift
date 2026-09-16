@@ -1,7 +1,6 @@
 import Cocoa
 import SQLite3
 import Foundation
-import ApplicationServices
 
 // MARK: - App Category Resolver
 enum AppCategory: String {
@@ -18,7 +17,7 @@ func categorizeApp(bundleId: String, appName: String) -> String {
     let lowerBundle = bundleId.lowercased()
     let lowerName = appName.lowercased()
 
-    if lowerBundle.contains("antigravity") || lowerBundle.contains("cursor") || lowerBundle.contains("codex") || lowerBundle.contains("zed") || lowerBundle.contains("xcode") || lowerBundle.contains("iterm") || lowerBundle.contains("terminal") || lowerBundle.contains("warp") || lowerName.contains("zcode") || lowerName.contains("code") {
+    if lowerBundle.contains("antigravity") || lowerBundle.contains("cursor") || lowerBundle.contains("codex") || lowerBundle.contains("zed") || lowerBundle.contains("xcode") || lowerBundle.contains("iterm") || lowerBundle.contains("terminal") || lowerBundle.contains("warp") || lowerBundle.contains("cmux") || lowerName.contains("zcode") || lowerName.contains("code") {
         return AppCategory.coding.rawValue
     }
     if lowerBundle.contains("chrome") || lowerBundle.contains("safari") || lowerBundle.contains("arc") || lowerBundle.contains("brave") || lowerBundle.contains("browser") {
@@ -39,27 +38,23 @@ func categorizeApp(bundleId: String, appName: String) -> String {
     return AppCategory.system.rawValue
 }
 
-// MARK: - Project Detector from Window Title & Path
+// MARK: - Project Detector
 func detectProject(appName: String, windowTitle: String) -> String {
-    if windowTitle.isEmpty { return "Genel" }
-    
     let title = windowTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    let lowerTitle = title.lowercased()
     
-    // 1. Bilinen yaygın klasör/proje isimleri (Habil & Probex vb.)
     let knownProjects = [
         "erlik", "immostory", "qnack", "tolky", "mamapapa", "glowniq",
         "kinderverhaal", "silayolu", "paratura", "probex", "tamam",
         "2run", "vetaverse", "hermes", "openclaw", "pascal-editor"
     ]
     
-    let lowerTitle = title.lowercased()
     for proj in knownProjects {
         if lowerTitle.contains(proj) {
             return proj.capitalized
         }
     }
     
-    // 2. IDE / Editör pencere kalıpları: "filename — ProjectName" veya "ProjectName — filename"
     if title.contains(" — ") {
         let parts = title.components(separatedBy: " — ")
         for part in parts {
@@ -77,7 +72,6 @@ func detectProject(appName: String, windowTitle: String) -> String {
         }
     }
 
-    // 3. Dosya yolu içeriyorsa (~/code/X/Y)
     if title.contains("/") {
         let segments = title.components(separatedBy: "/")
         if let codeIdx = segments.firstIndex(of: "code"), codeIdx + 1 < segments.count {
@@ -85,7 +79,45 @@ func detectProject(appName: String, windowTitle: String) -> String {
         }
     }
 
-    return "Genel / Diğer"
+    if appName.lowercased().contains("antigravity") || appName.lowercased().contains("code") {
+        return "Erlik"
+    }
+
+    return "Genel"
+}
+
+// MARK: - Direct AppleScript Window Title Fetch
+func getActiveWindowName(appName: String) -> String {
+    let escapedApp = appName.replacingOccurrences(of: "\"", with: "\\\"")
+    let script = """
+    tell application "System Events"
+        if exists (process "\(escapedApp)") then
+            tell process "\(escapedApp)"
+                if (count of windows) > 0 then
+                    return name of front window
+                end if
+            end tell
+        end if
+    end tell
+    return ""
+    """
+    
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+    task.arguments = ["-e", script]
+    let pipe = Pipe()
+    task.standardOutput = pipe
+    
+    do {
+        try task.run()
+        task.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        if let str = String(data: data, encoding: .utf8) {
+            return str.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+    } catch {}
+    
+    return ""
 }
 
 // MARK: - SQLite Manager
@@ -122,9 +154,6 @@ class ErlikDB {
         CREATE INDEX IF NOT EXISTS idx_erlik_category ON erlik_heartbeats(category);
         """
         sqlite3_exec(db, sql, nil, nil, nil)
-
-        // Sütun migration kontrolü
-        sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN project_name TEXT DEFAULT 'Genel';", nil, nil, nil)
     }
 
     func record(app: String, bundleId: String, project: String, title: String, duration: Int, isAfk: Bool) {
@@ -169,28 +198,11 @@ func getIdleSeconds() -> Double {
     return 0
 }
 
-// MARK: - Active Window Title via Quartz & Accessibility
-func getActiveWindowDetails(pid: pid_t) -> String {
-    let options = CGWindowListOption(arrayLiteral: .excludeDesktopElements, .optionOnScreenOnly)
-    if let windowListInfo = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] {
-        for info in windowListInfo {
-            if let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t, ownerPID == pid {
-                if let layer = info[kCGWindowLayer as String] as? Int, layer == 0 {
-                    if let name = info[kCGWindowName as String] as? String, !name.trimmingCharacters(in: .whitespaces).isEmpty {
-                        return name
-                    }
-                }
-            }
-        }
-    }
-    return ""
-}
-
 // MARK: - Main Daemon Engine
 let dbPath = "/Users/halil/code/erlik/erlik.db"
 let db = ErlikDB(path: dbPath)
 
-print("🛡️ ERLİK Core Native Daemon with Project Intelligence aktifleştirildi.")
+print("🛡️ ERLİK Core Native Daemon (Direct Front App Window Extraction) aktifleştirildi.")
 print("📦 Veritabanı: \(dbPath)")
 
 let sampleInterval: TimeInterval = 2.0
@@ -213,7 +225,7 @@ Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { _ in
         if let front = NSWorkspace.shared.frontmostApplication {
             appName = front.localizedName ?? "Bilinmeyen"
             bundleId = front.bundleIdentifier ?? "unknown.app"
-            windowTitle = getActiveWindowDetails(pid: front.processIdentifier)
+            windowTitle = getActiveWindowName(appName: appName)
             projName = detectProject(appName: appName, windowTitle: windowTitle)
         }
     }
