@@ -23,8 +23,6 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #070B12; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(16px); }
-        .modal-enter { opacity: 0; transform: scale(0.95); }
-        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen p-3 sm:p-6 md:p-8 antialiased selection:bg-sky-500 selection:text-white">
@@ -38,11 +36,11 @@
                         <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-300 to-rose-400 bg-clip-text text-transparent">
                             ERLİK
                         </h1>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">v2.1 OS</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">v2.2 OS</span>
                     </div>
                     <p class="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-1.5 mt-0.5">
                         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Apple Silicon Native Activity & Privacy Tracker
+                        Apple Silicon Native Activity & Project Tracker
                     </p>
                 </div>
             </div>
@@ -77,9 +75,9 @@
                 </div>
             </div>
             <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
-                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Ana Uygulama</div>
-                <div id="metricTopApp" class="text-xl sm:text-2xl font-bold text-sky-400 mt-2 truncate">-</div>
-                <div id="metricTopAppTime" class="text-xs text-slate-400 mt-2 font-mono">0 sn</div>
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Ana Proje</div>
+                <div id="metricTopProject" class="text-xl sm:text-2xl font-bold text-sky-400 mt-2 truncate">-</div>
+                <div id="metricTopProjectTime" class="text-xs text-slate-400 mt-2 font-mono">0 sn</div>
             </div>
             <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
                 <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Boşta (AFK)</div>
@@ -113,31 +111,49 @@
             </div>
         </div>
 
-        <!-- App Breakdown & Live Feed -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+        <!-- Projects & App Breakdown Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+            <!-- Project Breakdown (NEW) -->
             <div class="glass p-5 rounded-2xl border border-slate-800/80 space-y-4">
-                <h2 class="text-sm font-semibold text-slate-200">Uygulama Kullanım Sıralaması</h2>
-                <div id="appContainer" class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                        <span>📁</span> Proje & Kod Klasörleri
+                    </h2>
+                    <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">Otomatik Tespit</span>
+                </div>
+                <div id="projectContainer" class="space-y-3">
                     <p class="text-slate-500 text-xs">Yükleniyor...</p>
                 </div>
             </div>
 
-            <div class="glass p-5 rounded-2xl border border-slate-800/80 lg:col-span-2 space-y-4">
-                <h2 class="text-sm font-semibold text-slate-200">Son Pencere Başlıkları & Detaylar</h2>
-                <div class="overflow-x-auto -mx-2 sm:mx-0">
-                    <table class="w-full text-left text-xs text-slate-300 min-w-[480px]">
-                        <thead class="bg-slate-800/60 uppercase text-[10px] font-semibold text-slate-400 border-b border-slate-700/60">
-                            <tr>
-                                <th class="py-2.5 px-3">Zaman</th>
-                                <th class="py-2.5 px-3">Uygulama</th>
-                                <th class="py-2.5 px-3">Pencere Başlığı</th>
-                                <th class="py-2.5 px-3 text-right">Süre</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recentFeed" class="divide-y divide-slate-800">
-                        </tbody>
-                    </table>
+            <!-- App Breakdown -->
+            <div class="glass p-5 rounded-2xl border border-slate-800/80 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                    <span>⚡</span> Uygulama Kullanım Sıralaması
+                </h2>
+                <div id="appContainer" class="space-y-3">
+                    <p class="text-slate-500 text-xs">Yükleniyor...</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Live Window Activity Feed -->
+        <div class="glass rounded-2xl border border-slate-800/80 p-5 space-y-4">
+            <h2 class="text-sm font-semibold text-slate-200">Canlı Pencere Başlıkları & Detaylar</h2>
+            <div class="overflow-x-auto -mx-2 sm:mx-0">
+                <table class="w-full text-left text-xs text-slate-300 min-w-[540px]">
+                    <thead class="bg-slate-800/60 uppercase text-[10px] font-semibold text-slate-400 border-b border-slate-700/60">
+                        <tr>
+                            <th class="py-2.5 px-3">Zaman</th>
+                            <th class="py-2.5 px-3">Proje</th>
+                            <th class="py-2.5 px-3">Uygulama</th>
+                            <th class="py-2.5 px-3">Pencere Başlığı</th>
+                            <th class="py-2.5 px-3 text-right">Süre</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentFeed" class="divide-y divide-slate-800">
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -163,8 +179,6 @@
                     <input type="url" id="cfgWebhook" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500 font-mono text-[11px]" placeholder="https://discord.com/api/webhooks/...">
                 </div>
             </div>
-
-            <div id="modalStatus" class="text-xs text-slate-400 hidden"></div>
 
             <div class="flex justify-end gap-2.5 pt-2">
                 <button onclick="saveSettingsOnly()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Ayarları Kaydet</button>
@@ -239,7 +253,6 @@
             return hrs + ' sa';
         }
 
-        // Modal Handlers
         async function openMailModal() {
             document.getElementById('mailModal').classList.remove('hidden');
             const res = await fetch('/api/settings');
@@ -306,10 +319,28 @@
                 document.getElementById('metricAfk').innerText = fmtDuration(data.total_afk_seconds);
                 document.getElementById('metricSessions').innerText = data.total_events || 0;
                 
-                if (data.apps && data.apps.length > 0) {
-                    document.getElementById('metricTopApp').innerText = data.apps[0].app_name;
-                    document.getElementById('metricTopAppTime').innerText = fmtDuration(data.apps[0].total_sec);
+                if (data.projects && data.projects.length > 0) {
+                    document.getElementById('metricTopProject').innerText = data.projects[0].project;
+                    document.getElementById('metricTopProjectTime').innerText = fmtDuration(data.projects[0].total_sec);
                 }
+
+                // Render Projects (NEW)
+                const projContainer = document.getElementById('projectContainer');
+                const maxProj = (data.projects && data.projects.length > 0) ? data.projects[0].total_sec : 1;
+                projContainer.innerHTML = (data.projects || []).map(p => {
+                    const pct = Math.round((p.total_sec / maxProj) * 100);
+                    return `
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold text-emerald-300">${p.project}</span>
+                                <span class="text-slate-400 font-mono">${fmtDuration(p.total_sec)}</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1.5">
+                                <div class="bg-emerald-400 h-1.5 rounded-full" style="width: ${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('') || '<p class="text-xs text-slate-500">Proje kaydı yok.</p>';
 
                 // Render App List
                 const appContainer = document.getElementById('appContainer');
@@ -329,11 +360,12 @@
                     `;
                 }).join('') || '<p class="text-xs text-slate-500">Kayıt yok.</p>';
 
-                // Render Table
+                // Render Table with Project tag
                 const feed = document.getElementById('recentFeed');
                 feed.innerHTML = data.recent.map(r => `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="py-2 px-3 font-mono text-slate-400 text-[11px]">${r.timestamp.split(' ')[1] || r.timestamp}</td>
+                        <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${r.project_name}</span></td>
                         <td class="py-2 px-3 font-semibold text-sky-400">${r.app_name}</td>
                         <td class="py-2 px-3 truncate max-w-xs text-slate-300" title="${r.window_title || ''}">${r.window_title || '-'}</td>
                         <td class="py-2 px-3 text-right font-mono text-emerald-400 font-medium">${fmtDuration(r.duration_seconds)}</td>

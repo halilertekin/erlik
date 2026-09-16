@@ -39,6 +39,55 @@ func categorizeApp(bundleId: String, appName: String) -> String {
     return AppCategory.system.rawValue
 }
 
+// MARK: - Project Detector from Window Title & Path
+func detectProject(appName: String, windowTitle: String) -> String {
+    if windowTitle.isEmpty { return "Genel" }
+    
+    let title = windowTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    // 1. Bilinen yaygın klasör/proje isimleri (Habil & Probex vb.)
+    let knownProjects = [
+        "erlik", "immostory", "qnack", "tolky", "mamapapa", "glowniq",
+        "kinderverhaal", "silayolu", "paratura", "probex", "tamam",
+        "2run", "vetaverse", "hermes", "openclaw", "pascal-editor"
+    ]
+    
+    let lowerTitle = title.lowercased()
+    for proj in knownProjects {
+        if lowerTitle.contains(proj) {
+            return proj.capitalized
+        }
+    }
+    
+    // 2. IDE / Editör pencere kalıpları: "filename — ProjectName" veya "ProjectName — filename"
+    if title.contains(" — ") {
+        let parts = title.components(separatedBy: " — ")
+        for part in parts {
+            let p = part.trimmingCharacters(in: .whitespaces)
+            if !p.contains(".") && p.count > 2 && p.count < 30 {
+                return p
+            }
+        }
+    } else if title.contains(" - ") {
+        let parts = title.components(separatedBy: " - ")
+        if let last = parts.last?.trimmingCharacters(in: .whitespaces), !last.isEmpty && last != appName {
+            if last.count > 2 && last.count < 30 && !last.contains(".") {
+                return last
+            }
+        }
+    }
+
+    // 3. Dosya yolu içeriyorsa (~/code/X/Y)
+    if title.contains("/") {
+        let segments = title.components(separatedBy: "/")
+        if let codeIdx = segments.firstIndex(of: "code"), codeIdx + 1 < segments.count {
+            return segments[codeIdx + 1].capitalized
+        }
+    }
+
+    return "Genel / Diğer"
+}
+
 // MARK: - SQLite Manager
 class ErlikDB {
     var db: OpaquePointer?
@@ -62,28 +111,35 @@ class ErlikDB {
             app_name TEXT NOT NULL,
             bundle_id TEXT NOT NULL,
             category TEXT NOT NULL,
+            project_name TEXT DEFAULT 'Genel',
             window_title TEXT,
             duration_seconds INTEGER NOT NULL,
             is_afk INTEGER DEFAULT 0
         );
         CREATE INDEX IF NOT EXISTS idx_erlik_time ON erlik_heartbeats(timestamp);
         CREATE INDEX IF NOT EXISTS idx_erlik_app ON erlik_heartbeats(app_name);
+        CREATE INDEX IF NOT EXISTS idx_erlik_project ON erlik_heartbeats(project_name);
         CREATE INDEX IF NOT EXISTS idx_erlik_category ON erlik_heartbeats(category);
         """
         sqlite3_exec(db, sql, nil, nil, nil)
+
+        // Sütun migration kontrolü
+        sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN project_name TEXT DEFAULT 'Genel';", nil, nil, nil)
     }
 
-    func record(app: String, bundleId: String, title: String, duration: Int, isAfk: Bool) {
+    func record(app: String, bundleId: String, project: String, title: String, duration: Int, isAfk: Bool) {
         let cat = isAfk ? "Boşta (AFK)" : categorizeApp(bundleId: bundleId, appName: app)
-        let sql = "INSERT INTO erlik_heartbeats (app_name, bundle_id, category, window_title, duration_seconds, is_afk) VALUES (?, ?, ?, ?, ?, ?);"
+        let proj = isAfk ? "-" : project
+        let sql = "INSERT INTO erlik_heartbeats (app_name, bundle_id, category, project_name, window_title, duration_seconds, is_afk) VALUES (?, ?, ?, ?, ?, ?, ?);"
         var stmt: OpaquePointer?
         if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
             sqlite3_bind_text(stmt, 1, (app as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 2, (bundleId as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 3, (cat as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(stmt, 4, (title as NSString).utf8String, -1, nil)
-            sqlite3_bind_int(stmt, 5, Int32(duration))
-            sqlite3_bind_int(stmt, 6, isAfk ? 1 : 0)
+            sqlite3_bind_text(stmt, 4, (proj as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 5, (title as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(stmt, 6, Int32(duration))
+            sqlite3_bind_int(stmt, 7, isAfk ? 1 : 0)
             sqlite3_step(stmt)
         }
         sqlite3_finalize(stmt)
@@ -134,28 +190,31 @@ func getActiveWindowDetails(pid: pid_t) -> String {
 let dbPath = "/Users/halil/code/erlik/erlik.db"
 let db = ErlikDB(path: dbPath)
 
-print("🛡️ ERLİK Core Native Daemon (Apple Silicon ARM64) aktifleştirildi.")
+print("🛡️ ERLİK Core Native Daemon with Project Intelligence aktifleştirildi.")
 print("📦 Veritabanı: \(dbPath)")
 
-let sampleInterval: TimeInterval = 2.0 // Her 2 sn örnekleme
+let sampleInterval: TimeInterval = 2.0
 var currentApp = ""
 var currentBundle = ""
 var currentTitle = ""
+var currentProject = ""
 var accumulatedSeconds = 0
 
 Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { _ in
     let idleSecs = getIdleSeconds()
-    let isAfk = idleSecs >= 120.0 // 2 dk hareketsizlikte AFK modu
+    let isAfk = idleSecs >= 120.0
 
     var appName = "AFK / Dinlenme"
     var bundleId = "com.apple.idle"
     var windowTitle = ""
+    var projName = "-"
 
     if !isAfk {
         if let front = NSWorkspace.shared.frontmostApplication {
             appName = front.localizedName ?? "Bilinmeyen"
             bundleId = front.bundleIdentifier ?? "unknown.app"
             windowTitle = getActiveWindowDetails(pid: front.processIdentifier)
+            projName = detectProject(appName: appName, windowTitle: windowTitle)
         }
     }
 
@@ -163,11 +222,12 @@ Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { _ in
         accumulatedSeconds += Int(sampleInterval)
     } else {
         if !currentApp.isEmpty && accumulatedSeconds > 0 {
-            db.record(app: currentApp, bundleId: currentBundle, title: currentTitle, duration: accumulatedSeconds, isAfk: currentApp.starts(with: "AFK"))
+            db.record(app: currentApp, bundleId: currentBundle, project: currentProject, title: currentTitle, duration: accumulatedSeconds, isAfk: currentApp.starts(with: "AFK"))
         }
         currentApp = appName
         currentBundle = bundleId
         currentTitle = windowTitle
+        currentProject = projName
         accumulatedSeconds = Int(sampleInterval)
     }
 }

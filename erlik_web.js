@@ -90,7 +90,11 @@ const server = http.createServer((req, res) => {
 
         const categories = querySQLite(`SELECT category, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY category ORDER BY total_sec DESC;`);
         const apps = querySQLite(`SELECT app_name, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY app_name ORDER BY total_sec DESC LIMIT 10;`);
-        const recent = querySQLite(`SELECT timestamp, app_name, category, window_title, duration_seconds FROM erlik_heartbeats WHERE ${timeFilter} ORDER BY id DESC LIMIT 25;`);
+        
+        // Projects breakdown
+        const projects = querySQLite(`SELECT IFNULL(project_name, 'Genel') as project, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY project ORDER BY total_sec DESC LIMIT 8;`);
+
+        const recent = querySQLite(`SELECT timestamp, app_name, category, IFNULL(project_name, 'Genel') as project_name, window_title, duration_seconds FROM erlik_heartbeats WHERE ${timeFilter} ORDER BY id DESC LIMIT 25;`);
         const timeline = querySQLite(`SELECT ${timeGroup} as period, SUM(duration_seconds) as duration FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY period ORDER BY period ASC;`);
 
         const payload = {
@@ -99,6 +103,7 @@ const server = http.createServer((req, res) => {
             total_events: countRes[0] ? countRes[0].total : 0,
             categories: categories,
             apps: apps,
+            projects: projects,
             recent: recent,
             timeline: timeline
         };
@@ -106,11 +111,10 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(payload));
     } else if (parsedUrl.pathname === '/api/export') {
-        // ActivityWatch standard compatible bucket export
-        const events = querySQLite(`SELECT id, timestamp, app_name, bundle_id, category, window_title, duration_seconds, is_afk FROM erlik_heartbeats ORDER BY id ASC;`);
+        const events = querySQLite(`SELECT id, timestamp, app_name, bundle_id, category, IFNULL(project_name, 'Genel') as project, window_title, duration_seconds, is_afk FROM erlik_heartbeats ORDER BY id ASC;`);
         const exportData = {
             client: "erlik-macos-arm64",
-            version: "2.1.0",
+            version: "2.2.0",
             exported_at: new Date().toISOString(),
             buckets: {
                 "erlik-watcher-window": {
@@ -123,6 +127,7 @@ const server = http.createServer((req, res) => {
                         data: {
                             app: e.app_name,
                             bundle_id: e.bundle_id,
+                            project: e.project,
                             title: e.window_title,
                             category: e.category,
                             is_afk: Boolean(e.is_afk)
@@ -144,7 +149,6 @@ const server = http.createServer((req, res) => {
                 let payload = {};
                 try { payload = JSON.parse(body || '{}'); } catch(e) {}
                 
-                // Update config if provided
                 const cfg = loadConfig();
                 if (payload.email) cfg.email = payload.email.trim();
                 if (payload.webhook) cfg.webhook = payload.webhook.trim();
@@ -165,5 +169,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-    console.log(`🐺 ERLİK Web UI v2.1 ready: http://localhost:${PORT}`);
+    console.log(`🐺 ERLİK Web UI v2.2 ready: http://localhost:${PORT}`);
 });
