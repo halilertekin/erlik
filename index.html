@@ -21,34 +21,46 @@
         }
     </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #080C14; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #070B12; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(16px); }
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen p-4 md:p-8 antialiased selection:bg-sky-500 selection:text-white">
+<body class="text-slate-100 min-h-screen p-3 sm:p-6 md:p-8 antialiased selection:bg-sky-500 selection:text-white">
     <div class="max-w-6xl mx-auto space-y-6">
         <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800/80 pb-6">
-            <div class="flex items-center gap-4">
-                <img src="/assets/erlik_logo.jpg" alt="ERLIK Logo" class="w-12 h-12 rounded-2xl shadow-lg shadow-sky-500/20 border border-sky-500/30 object-cover">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-5">
+            <div class="flex items-center gap-3.5">
+                <img src="/assets/erlik_logo.jpg" alt="ERLIK Logo" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl shadow-lg shadow-sky-500/20 border border-sky-500/30 object-cover">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-300 to-rose-400 bg-clip-text text-transparent">
-                        ERLİK
-                    </h1>
-                    <p class="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-300 to-rose-400 bg-clip-text text-transparent">
+                            ERLİK
+                        </h1>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">v2.1 OS</span>
+                    </div>
+                    <p class="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-1.5 mt-0.5">
                         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Native ARM64 Activity & Focus Intelligence
+                        Apple Silicon Native Activity & Privacy Tracker
                     </p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <!-- Time Range Filter -->
+
+            <!-- Actions -->
+            <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
                 <div class="flex bg-slate-900 border border-slate-800 rounded-xl p-1 text-xs">
                     <button onclick="setTimeRange('day')" id="btn-day" class="px-3 py-1.5 rounded-lg font-medium transition bg-sky-500 text-white">Günlük</button>
                     <button onclick="setTimeRange('week')" id="btn-week" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200">Haftalık</button>
                     <button onclick="setTimeRange('month')" id="btn-month" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200">Aylık</button>
                 </div>
-                <button onclick="sendWeeklyEmail()" id="btnEmail" class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5">
+
+                <button onclick="openExportModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700/80 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5" title="Verileri JSON olarak dışa aktar">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span class="hidden sm:inline">Dışa Aktar</span>
+                </button>
+
+                <button onclick="openMailModal()" id="btnEmail" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                     Mail Raporu
                 </button>
@@ -56,68 +68,64 @@
         </header>
 
         <!-- KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="glass p-5 rounded-2xl border border-slate-800/80">
-                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Aktif Odaklanma</div>
-                <div id="metricTotal" class="text-3xl font-bold text-white mt-2 font-mono">0 dk</div>
-                <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Aktif Odak</div>
+                <div id="metricTotal" class="text-2xl sm:text-3xl font-bold text-white mt-2 font-mono">0 dk</div>
+                <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1 truncate">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Gerçek Ekran Süresi
                 </div>
             </div>
-            <div class="glass p-5 rounded-2xl border border-slate-800/80">
+            <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
                 <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Ana Uygulama</div>
-                <div id="metricTopApp" class="text-2xl font-bold text-sky-400 mt-2 truncate">-</div>
+                <div id="metricTopApp" class="text-xl sm:text-2xl font-bold text-sky-400 mt-2 truncate">-</div>
                 <div id="metricTopAppTime" class="text-xs text-slate-400 mt-2 font-mono">0 sn</div>
             </div>
-            <div class="glass p-5 rounded-2xl border border-slate-800/80">
-                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Boşta (AFK) Süresi</div>
-                <div id="metricAfk" class="text-3xl font-bold text-amber-400 mt-2 font-mono">0 dk</div>
-                <div class="text-xs text-slate-500 mt-2">Donanım IOHID Sayacı</div>
+            <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Boşta (AFK)</div>
+                <div id="metricAfk" class="text-2xl sm:text-3xl font-bold text-amber-400 mt-2 font-mono">0 dk</div>
+                <div class="text-xs text-slate-500 mt-2 truncate">Donanım IOHID Sayacı</div>
             </div>
-            <div class="glass p-5 rounded-2xl border border-slate-800/80">
-                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Toplam Nabız (Events)</div>
-                <div id="metricSessions" class="text-3xl font-bold text-indigo-400 mt-2 font-mono">0</div>
-                <div class="text-xs text-slate-500 mt-2">Kalıcı SQLite Kayıtları</div>
+            <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Toplam Nabız</div>
+                <div id="metricSessions" class="text-2xl sm:text-3xl font-bold text-indigo-400 mt-2 font-mono">0</div>
+                <div class="text-xs text-slate-500 mt-2 truncate">Kalıcı SQLite Kayıtları</div>
             </div>
         </div>
 
         <!-- Charts Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Timeline Chart -->
-            <div class="glass p-5 rounded-2xl border border-slate-800/80 lg:col-span-2 flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+            <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80 lg:col-span-2 flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm font-semibold text-slate-200">Zaman Boyunca Odak Dağılımı</h2>
                     <span id="rangeLabel" class="text-xs font-mono text-slate-400">Son 24 Saat</span>
                 </div>
-                <div class="h-64 relative">
+                <div class="h-60 sm:h-64 relative">
                     <canvas id="timelineChart"></canvas>
                 </div>
             </div>
 
-            <!-- Category Donut Chart -->
-            <div class="glass p-5 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
-                <h2 class="text-sm font-semibold text-slate-200 mb-4">Kategori Dağılımı</h2>
-                <div class="h-64 relative flex items-center justify-center">
+            <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
+                <h2 class="text-sm font-semibold text-slate-200 mb-3">Kategori Dağılımı</h2>
+                <div class="h-60 sm:h-64 relative flex items-center justify-center">
                     <canvas id="categoryChart"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- App Breakdown & Live Feed -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- App Breakdown -->
-            <div class="glass p-6 rounded-2xl border border-slate-800/80 space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+            <div class="glass p-5 rounded-2xl border border-slate-800/80 space-y-4">
                 <h2 class="text-sm font-semibold text-slate-200">Uygulama Kullanım Sıralaması</h2>
                 <div id="appContainer" class="space-y-3">
                     <p class="text-slate-500 text-xs">Yükleniyor...</p>
                 </div>
             </div>
 
-            <!-- Live Window Activity -->
-            <div class="glass p-6 rounded-2xl border border-slate-800/80 lg:col-span-2 space-y-4">
+            <div class="glass p-5 rounded-2xl border border-slate-800/80 lg:col-span-2 space-y-4">
                 <h2 class="text-sm font-semibold text-slate-200">Son Pencere Başlıkları & Detaylar</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-slate-300">
+                <div class="overflow-x-auto -mx-2 sm:mx-0">
+                    <table class="w-full text-left text-xs text-slate-300 min-w-[480px]">
                         <thead class="bg-slate-800/60 uppercase text-[10px] font-semibold text-slate-400 border-b border-slate-700/60">
                             <tr>
                                 <th class="py-2.5 px-3">Zaman</th>
@@ -134,10 +142,80 @@
         </div>
     </div>
 
+    <!-- MODERN MODAL: E-Mail & Webhook Ayarları -->
+    <div id="mailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="glass border border-slate-700/80 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">✉️</div>
+                    <h3 class="text-base font-bold text-slate-100">Rapor Gönderimi & Ayarları</h3>
+                </div>
+                <button onclick="closeMailModal()" class="text-slate-400 hover:text-slate-200 text-lg">&times;</button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Alıcı E-Posta Adresi</label>
+                    <input type="email" id="cfgEmail" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500 font-mono" placeholder="ornek@alanadi.com">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Discord / Slack Webhook URL (Opsiyonel)</label>
+                    <input type="url" id="cfgWebhook" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500 font-mono text-[11px]" placeholder="https://discord.com/api/webhooks/...">
+                </div>
+            </div>
+
+            <div id="modalStatus" class="text-xs text-slate-400 hidden"></div>
+
+            <div class="flex justify-end gap-2.5 pt-2">
+                <button onclick="saveSettingsOnly()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Ayarları Kaydet</button>
+                <button onclick="dispatchMailReport()" id="btnModalSend" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5">
+                    Raporu Şimdi Gönder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODERN MODAL: JSON Export -->
+    <div id="exportModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="glass border border-slate-700/80 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">📦</div>
+                    <h3 class="text-base font-bold text-slate-100">Ham Veri Dışa Aktarma (JSON)</h3>
+                </div>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-200 text-lg">&times;</button>
+            </div>
+            <p class="text-xs text-slate-400">
+                ActivityWatch uyumlu ham JSON verileriniz. Kendi veri analizi veya yedekleme araçlarınız için kullanabilirsiniz:
+            </p>
+            <div class="flex gap-2">
+                <a href="/api/export?format=json" download="erlik-activity-data.json" class="flex-1 text-center py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold transition">
+                    JSON Dosyasını İndir
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODERN TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition duration-300 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-xl shadow-2xl text-xs flex items-center gap-2">
+        <span id="toastIcon">ℹ️</span>
+        <span id="toastMsg">Bildirim</span>
+    </div>
+
     <script>
         let currentRange = 'day';
         let timelineChart = null;
         let categoryChart = null;
+
+        function showToast(msg, icon = '✅') {
+            const t = document.getElementById('toast');
+            document.getElementById('toastIcon').innerText = icon;
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('translate-y-16', 'opacity-0');
+            setTimeout(() => {
+                t.classList.add('translate-y-16', 'opacity-0');
+            }, 3500);
+        }
 
         function setTimeRange(range) {
             currentRange = range;
@@ -161,17 +239,61 @@
             return hrs + ' sa';
         }
 
-        async function sendWeeklyEmail() {
-            const btn = document.getElementById('btnEmail');
+        // Modal Handlers
+        async function openMailModal() {
+            document.getElementById('mailModal').classList.remove('hidden');
+            const res = await fetch('/api/settings');
+            const cfg = await res.json();
+            document.getElementById('cfgEmail').value = cfg.email || '';
+            document.getElementById('cfgWebhook').value = cfg.webhook || '';
+        }
+
+        function closeMailModal() {
+            document.getElementById('mailModal').classList.add('hidden');
+        }
+
+        function openExportModal() {
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        async function saveSettingsOnly() {
+            const email = document.getElementById('cfgEmail').value;
+            const webhook = document.getElementById('cfgWebhook').value;
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, webhook })
+            });
+            showToast('Ayarlar başarıyla kaydedildi!', '💾');
+            closeMailModal();
+        }
+
+        async function dispatchMailReport() {
+            const btn = document.getElementById('btnModalSend');
             btn.innerText = 'Gönderiliyor...';
+            btn.disabled = true;
+
+            const email = document.getElementById('cfgEmail').value;
+            const webhook = document.getElementById('cfgWebhook').value;
+
             try {
-                const res = await fetch('/api/send-email', { method: 'POST' });
+                const res = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, webhook })
+                });
                 const d = await res.json();
-                alert(d.message || 'Rapor gönderildi!');
+                showToast(d.message || 'Rapor başarıyla gönderildi!', '📨');
+                closeMailModal();
             } catch(e) {
-                alert('E-posta servisi tetiklenirken hata oluştu.');
+                showToast('Gönderim sırasında hata oluştu.', '❌');
             } finally {
-                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg> Mail Raporu';
+                btn.innerText = 'Raporu Şimdi Gönder';
+                btn.disabled = false;
             }
         }
 

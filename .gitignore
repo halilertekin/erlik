@@ -1,3 +1,4 @@
 erlik.db
 *.log
 .DS_Store
+config.json
