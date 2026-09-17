@@ -190,7 +190,19 @@ const server = http.createServer((req, res) => {
                 saveConfig(cfg);
 
                 const scriptPath = path.join(__dirname, 'erlik_mailer.sh');
-                execSync(`USER_EMAIL="${cfg.email}" USER_WEBHOOK="${cfg.webhook}" "${scriptPath}"`, { encoding: 'utf-8' });
+                const { spawnSync } = require('child_process');
+                const runResult = spawnSync('/bin/bash', [scriptPath], {
+                    env: {
+                        ...process.env,
+                        USER_EMAIL: cfg.email,
+                        USER_WEBHOOK: cfg.webhook
+                    },
+                    encoding: 'utf-8'
+                });
+                
+                if (runResult.status !== 0 && runResult.error) {
+                    throw new Error(runResult.error.message || 'Mailer execution failed');
+                }
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, message: `Rapor ${cfg.email || 'Webhook'} adresine başarıyla iletildi!` }));
             } catch(e) {

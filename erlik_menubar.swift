@@ -69,9 +69,9 @@ class ErlikMenuBarApp: NSObject, NSApplicationDelegate {
 
         // Dil Seçim Alt Menüsü
         let langMenu = NSMenu()
-        let trItem = NSMenuItem(title: "Türkçe \(currentLang == .tr ? "✓" : "")", action: #selector(setLangTR), keyEquivalent: "")
-        let enItem = NSMenuItem(title: "English \(currentLang == .en ? "✓" : "")", action: #selector(setLangEN), keyEquivalent: "")
-        let nlItem = NSMenuItem(title: "Nederlands \(currentLang == .nl ? "✓" : "")", action: #selector(setLangNL), keyEquivalent: "")
+        let trItem = NSMenuItem(title: "🇹🇷 Türkçe \(currentLang == .tr ? "✓" : "")", action: #selector(setLangTR), keyEquivalent: "")
+        let enItem = NSMenuItem(title: "🇬🇧 English \(currentLang == .en ? "✓" : "")", action: #selector(setLangEN), keyEquivalent: "")
+        let nlItem = NSMenuItem(title: "🇳🇱 Nederlands \(currentLang == .nl ? "✓" : "")", action: #selector(setLangNL), keyEquivalent: "")
         langMenu.addItem(trItem)
         langMenu.addItem(enItem)
         langMenu.addItem(nlItem)

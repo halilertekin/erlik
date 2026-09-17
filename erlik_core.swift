@@ -137,11 +137,15 @@ func detectGitBranch(project: String) -> String {
     
     let fm = FileManager.default
     let home = fm.homeDirectoryForCurrentUser.path
+    let proj = project.lowercased()
     let candidates = [
-        "\(home)/code/\(project.lowercased())",
-        "\(home)/code/habil/\(project.lowercased()).be",
-        "\(home)/code/habil/\(project.lowercased())",
-        "\(home)/code/probex/\(project.lowercased())"
+        "\(home)/code/\(proj)",
+        "\(home)/Projects/\(proj)",
+        "\(home)/Developer/\(proj)",
+        "\(home)/Documents/Projects/\(proj)",
+        "\(home)/code/habil/\(proj).be",
+        "\(home)/code/habil/\(proj)",
+        "\(home)/code/probex/\(proj)"
     ]
     
     for c in candidates {
@@ -282,7 +286,17 @@ func getIdleSeconds() -> Double {
 }
 
 // MARK: - Main Daemon Engine
-let dbPath = "/Users/halil/code/erlik/erlik.db"
+let fileManager = FileManager.default
+let currentDir = fileManager.currentDirectoryPath
+let defaultPath = "\(currentDir)/erlik.db"
+let envDb = ProcessInfo.processInfo.environment["ERLIK_DB_PATH"]
+let dbPath = envDb ?? (fileManager.fileExists(atPath: defaultPath) ? defaultPath : "\(fileManager.homeDirectoryForCurrentUser.path)/.erlik/erlik.db")
+
+// Ensure parent directory exists if using home
+if dbPath.contains("/.erlik/") {
+    try? fileManager.createDirectory(atPath: "\(fileManager.homeDirectoryForCurrentUser.path)/.erlik", withIntermediateDirectories: true)
+}
+
 let db = ErlikDB(path: dbPath)
 
 print("🛡️ ERLİK Core Native Daemon (Title + Project + Git Branch) aktifleştirildi.")
