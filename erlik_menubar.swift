@@ -18,21 +18,24 @@ class ErlikMenuBarApp: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Çıkış", action: #selector(quit), keyEquivalent: "q"))
 
         statusItem?.menu = menu
-        timer = Timer.scheduledTimer(timeInterval: 3.0, target: self, selector: #selector(updateStatus), userInfo: nil, repeats: true)
+        
+        // Her 2 saniyede bir gerçek zamanlı donanım ve odak güncellemesi
+        timer = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(updateStatus), userInfo: nil, repeats: true)
     }
 
-    func getDiskFreeSpaceGB() -> String {
-        let fileURL = URL(fileURLWithPath: "/")
+    // Doğrudan APFS Data Volume (/System/Volumes/Data) gerçek boş alanı
+    func getDiskFreeSpace() -> String {
         do {
-            let values = try fileURL.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-            if let capacity = values.volumeAvailableCapacityForImportantUsage {
-                let gb = Double(capacity) / 1_073_741_824.0
+            let attrs = try FileManager.default.attributesOfFileSystem(forPath: "/System/Volumes/Data")
+            if let freeBytes = attrs[.systemFreeSize] as? Int64 {
+                let gb = Double(freeBytes) / 1_073_741_824.0
                 return String(format: "%.0fG", gb)
             }
         } catch {}
         return "--"
     }
 
+    // Mach Çekirdeği ile anlık aktif/wired/compressed bellek hesaplama
     func getRAMUsage() -> String {
         var stats = vm_statistics64()
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)
@@ -48,14 +51,15 @@ class ErlikMenuBarApp: NSObject, NSApplicationDelegate {
             let compressed = UInt64(stats.compressor_page_count) * pageSize
             let usedBytes = active + wired + compressed
             let totalBytes = ProcessInfo.processInfo.physicalMemory
+            let usedGB = Double(usedBytes) / 1_073_741_824.0
             let pct = Double(usedBytes) / Double(totalBytes) * 100.0
-            return String(format: "%.0f%%", pct)
+            return String(format: "%.0f%% (%.0fG)", pct, usedGB)
         }
         return "--"
     }
 
     @objc func updateStatus() {
-        let diskStr = getDiskFreeSpaceGB()
+        let diskStr = getDiskFreeSpace()
         let ramStr = getRAMUsage()
 
         guard let url = URL(string: "http://127.0.0.1:5757/api/stats?range=day") else { return }
