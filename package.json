@@ -1,0 +1,35 @@
+{
+  "name": "erlik",
+  "version": "3.1.0",
+  "description": "Apple Silicon (ARM64) Native Activity & Focus Intelligence Tracker for macOS",
+  "main": "erlik_web.js",
+  "bin": {
+    "erlik": "bin/erlik-cli.js"
+  },
+  "scripts": {
+    "start": "./erlik.sh start",
+    "stop": "./erlik.sh stop",
+    "status": "./erlik.sh status"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/halilertekin/erlik.git"
+  },
+  "keywords": [
+    "activitywatch",
+    "wakatime",
+    "time-tracking",
+    "macos",
+    "apple-silicon",
+    "arm64",
+    "swift",
+    "productivity",
+    "pomodoro"
+  ],
+  "author": "Halil Ertekin <halil@ertekin.me>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/halilertekin/erlik/issues"
+  },
+  "homepage": "https://github.com/halilertekin/erlik#readme"
+}

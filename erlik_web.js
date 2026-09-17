@@ -4,21 +4,43 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const PORT = 5757;
-const DB_PATH = '/Users/halil/code/erlik/erlik.db';
-const HTML_PATH = '/Users/halil/code/erlik/index.html';
-const CONFIG_PATH = '/Users/halil/code/erlik/config.json';
+const DB_PATH = path.join(__dirname, 'erlik.db');
+const HTML_PATH = path.join(__dirname, 'index.html');
+const CONFIG_PATH = path.join(__dirname, 'config.json');
+const ENV_PATH = path.join(__dirname, '.env');
 
-// Config Helper
+// Parse .env if exists
+function parseEnv() {
+    const env = {};
+    if (fs.existsSync(ENV_PATH)) {
+        const lines = fs.readFileSync(ENV_PATH, 'utf8').split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+                const idx = trimmed.indexOf('=');
+                const k = trimmed.substring(0, idx).trim();
+                const v = trimmed.substring(idx + 1).trim();
+                env[k] = v;
+            }
+        }
+    }
+    return env;
+}
+
+// Config Helper (Env -> config.json -> Defaults)
 function loadConfig() {
+    const env = parseEnv();
+    let fileCfg = {};
     try {
         if (fs.existsSync(CONFIG_PATH)) {
-            return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+            fileCfg = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
         }
     } catch(e) {}
+    
     return {
-        email: "halil@ertekin.me",
-        webhook: "https://discord.com/api/webhooks/1502968852516966461/6u33jekF1gGYeQvKHArZZSeFlp8ofTE4uIF-k6D4CjAY-1LdBsiIXESL-DvzjtWLusJX",
-        daily_goal_hours: 4
+        email: process.env.ERLIK_EMAIL || env.ERLIK_EMAIL || fileCfg.email || "",
+        webhook: process.env.ERLIK_DISCORD_WEBHOOK || env.ERLIK_DISCORD_WEBHOOK || fileCfg.webhook || "",
+        daily_goal_hours: Number(process.env.ERLIK_DAILY_GOAL_HOURS || env.ERLIK_DAILY_GOAL_HOURS || fileCfg.daily_goal_hours || 4)
     };
 }
 
@@ -42,7 +64,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         fs.createReadStream(HTML_PATH).pipe(res);
     } else if (parsedUrl.pathname === '/assets/erlik_logo.jpg') {
-        const logoPath = '/Users/halil/code/erlik/assets/erlik_logo.jpg';
+        const logoPath = path.join(__dirname, 'assets', 'erlik_logo.jpg');
         if (fs.existsSync(logoPath)) {
             res.writeHead(200, { 'Content-Type': 'image/jpeg' });
             fs.createReadStream(logoPath).pipe(res);
@@ -99,7 +121,7 @@ const server = http.createServer((req, res) => {
         // Projects breakdown with Git branches
         const projects = querySQLite(`SELECT IFNULL(project_name, 'Genel') as project, IFNULL(git_branch, '-') as branch, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY project ORDER BY total_sec DESC LIMIT 8;`);
 
-        // Daily Activity Streak (Son 14 gün)
+        // Daily Activity Streak
         const streakDays = querySQLite(`SELECT strftime('%Y-%m-%d', timestamp) as day, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= datetime('now', '-14 days') GROUP BY day ORDER BY day ASC;`);
 
         const recent = querySQLite(`SELECT timestamp, app_name, category, IFNULL(project_name, 'Genel') as project_name, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds FROM erlik_heartbeats WHERE ${timeFilter} ORDER BY id DESC LIMIT 25;`);
@@ -126,7 +148,7 @@ const server = http.createServer((req, res) => {
         const events = querySQLite(`SELECT id, timestamp, app_name, bundle_id, category, IFNULL(project_name, 'Genel') as project, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds, is_afk FROM erlik_heartbeats ORDER BY id ASC;`);
         const exportData = {
             client: "erlik-macos-arm64",
-            version: "3.0.0",
+            version: "3.1.0",
             exported_at: new Date().toISOString(),
             buckets: {
                 "erlik-watcher-window": {
@@ -167,9 +189,10 @@ const server = http.createServer((req, res) => {
                 if (payload.webhook) cfg.webhook = payload.webhook.trim();
                 saveConfig(cfg);
 
-                execSync(`USER_EMAIL="${cfg.email}" USER_WEBHOOK="${cfg.webhook}" /Users/halil/code/erlik/erlik_mailer.sh`, { encoding: 'utf-8' });
+                const scriptPath = path.join(__dirname, 'erlik_mailer.sh');
+                execSync(`USER_EMAIL="${cfg.email}" USER_WEBHOOK="${cfg.webhook}" "${scriptPath}"`, { encoding: 'utf-8' });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, message: `Rapor ${cfg.email} ve Webhook'a başarıyla iletildi!` }));
+                res.end(JSON.stringify({ success: true, message: `Rapor ${cfg.email || 'Webhook'} adresine başarıyla iletildi!` }));
             } catch(e) {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: e.message }));
@@ -182,5 +205,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-    console.log(`🐺 ERLİK Web UI v3.0 ready: http://localhost:${PORT}`);
+    console.log(`🐺 ERLİK Web UI v3.1 ready: http://localhost:${PORT}`);
 });

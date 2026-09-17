@@ -1,12 +1,18 @@
 #!/bin/bash
 # ERLIK Otomatik E-Posta & Webhook Raporlayıcı
-DB_PATH="/Users/halil/code/erlik/erlik.db"
-CONFIG_PATH="/Users/halil/code/erlik/config.json"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+DB_PATH="$DIR/erlik.db"
+CONFIG_PATH="$DIR/config.json"
+ENV_PATH="$DIR/.env"
 
-TO_EMAIL="${USER_EMAIL:-}"
-DISCORD_WEBHOOK="${USER_WEBHOOK:-}"
+# .env varsa kaynak olarak al
+if [ -f "$ENV_PATH" ]; then
+    export $(grep -v '^#' "$ENV_PATH" | xargs 2>/dev/null)
+fi
 
-# Eğer parametre env'den gelmediyse config.json'dan oku
+TO_EMAIL="${USER_EMAIL:-$ERLIK_EMAIL}"
+DISCORD_WEBHOOK="${USER_WEBHOOK:-$ERLIK_DISCORD_WEBHOOK}"
+
 if [ -z "$TO_EMAIL" ] && [ -f "$CONFIG_PATH" ]; then
     TO_EMAIL=$(grep -o '"email": *"[^"]*"' "$CONFIG_PATH" | cut -d'"' -f4)
 fi

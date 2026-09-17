@@ -1,4 +1,8 @@
 erlik.db
 *.log
 .DS_Store
+.env
+.env.local
 config.json
+node_modules/
+dist/
