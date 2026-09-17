@@ -17,7 +17,8 @@ function loadConfig() {
     } catch(e) {}
     return {
         email: "halil@ertekin.me",
-        webhook: "https://discord.com/api/webhooks/1502968852516966461/6u33jekF1gGYeQvKHArZZSeFlp8ofTE4uIF-k6D4CjAY-1LdBsiIXESL-DvzjtWLusJX"
+        webhook: "https://discord.com/api/webhooks/1502968852516966461/6u33jekF1gGYeQvKHArZZSeFlp8ofTE4uIF-k6D4CjAY-1LdBsiIXESL-DvzjtWLusJX",
+        daily_goal_hours: 4
     };
 }
 
@@ -62,6 +63,7 @@ const server = http.createServer((req, res) => {
                     const current = loadConfig();
                     if (data.email !== undefined) current.email = data.email.trim();
                     if (data.webhook !== undefined) current.webhook = data.webhook.trim();
+                    if (data.daily_goal_hours !== undefined) current.daily_goal_hours = Number(data.daily_goal_hours);
                     saveConfig(current);
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: true, config: current }));
@@ -88,22 +90,32 @@ const server = http.createServer((req, res) => {
         const afkRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND ${timeFilter};`);
         const countRes = querySQLite(`SELECT COUNT(*) as total FROM erlik_heartbeats WHERE ${timeFilter};`);
 
+        // AI Assisted coding metrics
+        const aiCodingRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} AND (app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Hermes%');`);
+
         const categories = querySQLite(`SELECT category, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY category ORDER BY total_sec DESC;`);
         const apps = querySQLite(`SELECT app_name, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY app_name ORDER BY total_sec DESC LIMIT 10;`);
         
-        // Projects breakdown
-        const projects = querySQLite(`SELECT IFNULL(project_name, 'Genel') as project, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY project ORDER BY total_sec DESC LIMIT 8;`);
+        // Projects breakdown with Git branches
+        const projects = querySQLite(`SELECT IFNULL(project_name, 'Genel') as project, IFNULL(git_branch, '-') as branch, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY project ORDER BY total_sec DESC LIMIT 8;`);
 
-        const recent = querySQLite(`SELECT timestamp, app_name, category, IFNULL(project_name, 'Genel') as project_name, window_title, duration_seconds FROM erlik_heartbeats WHERE ${timeFilter} ORDER BY id DESC LIMIT 25;`);
+        // Daily Activity Streak (Son 14 gün)
+        const streakDays = querySQLite(`SELECT strftime('%Y-%m-%d', timestamp) as day, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= datetime('now', '-14 days') GROUP BY day ORDER BY day ASC;`);
+
+        const recent = querySQLite(`SELECT timestamp, app_name, category, IFNULL(project_name, 'Genel') as project_name, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds FROM erlik_heartbeats WHERE ${timeFilter} ORDER BY id DESC LIMIT 25;`);
         const timeline = querySQLite(`SELECT ${timeGroup} as period, SUM(duration_seconds) as duration FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY period ORDER BY period ASC;`);
 
+        const cfg = loadConfig();
         const payload = {
             total_active_seconds: activeRes[0] ? activeRes[0].total : 0,
             total_afk_seconds: afkRes[0] ? afkRes[0].total : 0,
+            total_ai_coding_seconds: aiCodingRes[0] ? aiCodingRes[0].total : 0,
             total_events: countRes[0] ? countRes[0].total : 0,
+            daily_goal_hours: cfg.daily_goal_hours || 4,
             categories: categories,
             apps: apps,
             projects: projects,
+            streak: streakDays,
             recent: recent,
             timeline: timeline
         };
@@ -111,10 +123,10 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(payload));
     } else if (parsedUrl.pathname === '/api/export') {
-        const events = querySQLite(`SELECT id, timestamp, app_name, bundle_id, category, IFNULL(project_name, 'Genel') as project, window_title, duration_seconds, is_afk FROM erlik_heartbeats ORDER BY id ASC;`);
+        const events = querySQLite(`SELECT id, timestamp, app_name, bundle_id, category, IFNULL(project_name, 'Genel') as project, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds, is_afk FROM erlik_heartbeats ORDER BY id ASC;`);
         const exportData = {
             client: "erlik-macos-arm64",
-            version: "2.2.0",
+            version: "3.0.0",
             exported_at: new Date().toISOString(),
             buckets: {
                 "erlik-watcher-window": {
@@ -128,6 +140,7 @@ const server = http.createServer((req, res) => {
                             app: e.app_name,
                             bundle_id: e.bundle_id,
                             project: e.project,
+                            branch: e.git_branch,
                             title: e.window_title,
                             category: e.category,
                             is_afk: Boolean(e.is_afk)
@@ -169,5 +182,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-    console.log(`🐺 ERLİK Web UI v2.2 ready: http://localhost:${PORT}`);
+    console.log(`🐺 ERLİK Web UI v3.0 ready: http://localhost:${PORT}`);
 });

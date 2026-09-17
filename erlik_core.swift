@@ -46,7 +46,7 @@ func detectProject(appName: String, windowTitle: String) -> String {
     let knownProjects = [
         "erlik", "immostory", "qnack", "tolky", "mamapapa", "glowniq",
         "kinderverhaal", "silayolu", "paratura", "probex", "tamam",
-        "2run", "vetaverse", "hermes", "openclaw", "pascal-editor"
+        "2run", "vetaverse", "hermes", "openclaw", "pascal-editor", "activity"
     ]
     
     for proj in knownProjects {
@@ -84,6 +84,40 @@ func detectProject(appName: String, windowTitle: String) -> String {
     }
 
     return "Genel"
+}
+
+// MARK: - Git Branch Detection
+func detectGitBranch(project: String) -> String {
+    if project.isEmpty || project == "Genel" || project == "-" { return "-" }
+    
+    let fm = FileManager.default
+    let home = fm.homeDirectoryForCurrentUser.path
+    let candidates = [
+        "\(home)/code/\(project.lowercased())",
+        "\(home)/code/habil/\(project.lowercased()).be",
+        "\(home)/code/habil/\(project.lowercased())",
+        "\(home)/code/probex/\(project.lowercased())"
+    ]
+    
+    for c in candidates {
+        if fm.fileExists(atPath: "\(c)/.git") {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+            task.currentDirectoryURL = URL(fileURLWithPath: c)
+            task.arguments = ["branch", "--show-current"]
+            let pipe = Pipe()
+            task.standardOutput = pipe
+            do {
+                try task.run()
+                task.waitUntilExit()
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                if let branch = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !branch.isEmpty {
+                    return branch
+                }
+            } catch {}
+        }
+    }
+    return "-"
 }
 
 // MARK: - Direct AppleScript Window Title Fetch
@@ -144,6 +178,7 @@ class ErlikDB {
             bundle_id TEXT NOT NULL,
             category TEXT NOT NULL,
             project_name TEXT DEFAULT 'Genel',
+            git_branch TEXT DEFAULT '-',
             window_title TEXT,
             duration_seconds INTEGER NOT NULL,
             is_afk INTEGER DEFAULT 0
@@ -154,21 +189,24 @@ class ErlikDB {
         CREATE INDEX IF NOT EXISTS idx_erlik_category ON erlik_heartbeats(category);
         """
         sqlite3_exec(db, sql, nil, nil, nil)
+        sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN git_branch TEXT DEFAULT '-';", nil, nil, nil)
     }
 
-    func record(app: String, bundleId: String, project: String, title: String, duration: Int, isAfk: Bool) {
+    func record(app: String, bundleId: String, project: String, branch: String, title: String, duration: Int, isAfk: Bool) {
         let cat = isAfk ? "Boşta (AFK)" : categorizeApp(bundleId: bundleId, appName: app)
         let proj = isAfk ? "-" : project
-        let sql = "INSERT INTO erlik_heartbeats (app_name, bundle_id, category, project_name, window_title, duration_seconds, is_afk) VALUES (?, ?, ?, ?, ?, ?, ?);"
+        let br = isAfk ? "-" : branch
+        let sql = "INSERT INTO erlik_heartbeats (app_name, bundle_id, category, project_name, git_branch, window_title, duration_seconds, is_afk) VALUES (?, ?, ?, ?, ?, ?, ?, ?);"
         var stmt: OpaquePointer?
         if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
             sqlite3_bind_text(stmt, 1, (app as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 2, (bundleId as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 3, (cat as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 4, (proj as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(stmt, 5, (title as NSString).utf8String, -1, nil)
-            sqlite3_bind_int(stmt, 6, Int32(duration))
-            sqlite3_bind_int(stmt, 7, isAfk ? 1 : 0)
+            sqlite3_bind_text(stmt, 5, (br as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 6, (title as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(stmt, 7, Int32(duration))
+            sqlite3_bind_int(stmt, 8, isAfk ? 1 : 0)
             sqlite3_step(stmt)
         }
         sqlite3_finalize(stmt)
@@ -202,7 +240,7 @@ func getIdleSeconds() -> Double {
 let dbPath = "/Users/halil/code/erlik/erlik.db"
 let db = ErlikDB(path: dbPath)
 
-print("🛡️ ERLİK Core Native Daemon (Direct Front App Window Extraction) aktifleştirildi.")
+print("🛡️ ERLİK Core Native Daemon (Title + Project + Git Branch) aktifleştirildi.")
 print("📦 Veritabanı: \(dbPath)")
 
 let sampleInterval: TimeInterval = 2.0
@@ -210,6 +248,7 @@ var currentApp = ""
 var currentBundle = ""
 var currentTitle = ""
 var currentProject = ""
+var currentBranch = ""
 var accumulatedSeconds = 0
 
 Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { _ in
@@ -220,6 +259,7 @@ Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { _ in
     var bundleId = "com.apple.idle"
     var windowTitle = ""
     var projName = "-"
+    var branchName = "-"
 
     if !isAfk {
         if let front = NSWorkspace.shared.frontmostApplication {
@@ -227,6 +267,7 @@ Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { _ in
             bundleId = front.bundleIdentifier ?? "unknown.app"
             windowTitle = getActiveWindowName(appName: appName)
             projName = detectProject(appName: appName, windowTitle: windowTitle)
+            branchName = detectGitBranch(project: projName)
         }
     }
 
@@ -234,12 +275,13 @@ Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { _ in
         accumulatedSeconds += Int(sampleInterval)
     } else {
         if !currentApp.isEmpty && accumulatedSeconds > 0 {
-            db.record(app: currentApp, bundleId: currentBundle, project: currentProject, title: currentTitle, duration: accumulatedSeconds, isAfk: currentApp.starts(with: "AFK"))
+            db.record(app: currentApp, bundleId: currentBundle, project: currentProject, branch: currentBranch, title: currentTitle, duration: accumulatedSeconds, isAfk: currentApp.starts(with: "AFK"))
         }
         currentApp = appName
         currentBundle = bundleId
         currentTitle = windowTitle
         currentProject = projName
+        currentBranch = branchName
         accumulatedSeconds = Int(sampleInterval)
     }
 }

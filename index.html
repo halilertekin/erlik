@@ -36,11 +36,11 @@
                         <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-300 to-rose-400 bg-clip-text text-transparent">
                             ERLİK
                         </h1>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">v2.2 OS</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono font-semibold">v3.0 PRO</span>
                     </div>
                     <p class="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-1.5 mt-0.5">
                         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Apple Silicon Native Activity & Project Tracker
+                        Apple Silicon Native Activity & Focus Intelligence
                     </p>
                 </div>
             </div>
@@ -53,19 +53,19 @@
                     <button onclick="setTimeRange('month')" id="btn-month" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200">Aylık</button>
                 </div>
 
+                <button onclick="openPomodoroModal()" id="btnPomodoro" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5">
+                    <span>🍅</span>
+                    <span id="headerPomodoroDisplay">Pomodoro (25m)</span>
+                </button>
+
                 <button onclick="openExportModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700/80 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5" title="Verileri JSON olarak dışa aktar">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     <span class="hidden sm:inline">Dışa Aktar</span>
                 </button>
 
-                
-                <button onclick="openPomodoroModal()" id="btnPomodoro" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5">
-                    <span>🍅</span>
-                    <span id="headerPomodoroDisplay">Pomodoro (25m)</span>
-                </button>
                 <button onclick="openMailModal()" id="btnEmail" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    Mail Raporu
+                    Mail
                 </button>
             </div>
         </header>
@@ -85,15 +85,25 @@
                 <div id="metricTopProjectTime" class="text-xs text-slate-400 mt-2 font-mono">0 sn</div>
             </div>
             <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
-                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Boşta (AFK)</div>
-                <div id="metricAfk" class="text-2xl sm:text-3xl font-bold text-amber-400 mt-2 font-mono">0 dk</div>
-                <div class="text-xs text-slate-500 mt-2 truncate">Donanım IOHID Sayacı</div>
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">🤖 AI Eşlikli Kodlama</div>
+                <div id="metricAiCoding" class="text-2xl sm:text-3xl font-bold text-purple-400 mt-2 font-mono">0 dk</div>
+                <div class="text-xs text-slate-500 mt-2 truncate">Antigravity / AI Araçları</div>
             </div>
             <div class="glass p-4 sm:p-5 rounded-2xl border border-slate-800/80">
-                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Toplam Nabız</div>
-                <div id="metricSessions" class="text-2xl sm:text-3xl font-bold text-indigo-400 mt-2 font-mono">0</div>
-                <div class="text-xs text-slate-500 mt-2 truncate">Kalıcı SQLite Kayıtları</div>
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Hedef & Streak</div>
+                <div id="metricStreak" class="text-2xl sm:text-3xl font-bold text-amber-400 mt-2 font-mono">1 Gün 🔥</div>
+                <div id="metricGoalPct" class="text-xs text-slate-400 mt-2 truncate">Günlük Hedef: %0</div>
             </div>
+        </div>
+
+        <!-- 20-20-20 Ergonomi Barı (Wellness) -->
+        <div class="glass p-3.5 px-4 rounded-xl border border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
+            <div class="flex items-center gap-2">
+                <span class="text-base">👀</span>
+                <span class="text-slate-300 font-medium">20-20-20 Ergonomi Kuralı:</span>
+                <span id="wellnessText" class="text-slate-400">Göz sağlığınız için her 20 dakikada bir 20 saniye 6 metre uzağa bakın.</span>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[11px] border border-emerald-500/20">Durum: Mükemmel</span>
         </div>
 
         <!-- Charts Grid -->
@@ -118,20 +128,18 @@
 
         <!-- Projects & App Breakdown Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-            <!-- Project Breakdown (NEW) -->
             <div class="glass p-5 rounded-2xl border border-slate-800/80 space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                        <span>📁</span> Proje & Kod Klasörleri
+                        <span>📁</span> Proje & Git Branch'leri
                     </h2>
-                    <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">Otomatik Tespit</span>
+                    <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">Branch Tracking</span>
                 </div>
                 <div id="projectContainer" class="space-y-3">
                     <p class="text-slate-500 text-xs">Yükleniyor...</p>
                 </div>
             </div>
 
-            <!-- App Breakdown -->
             <div class="glass p-5 rounded-2xl border border-slate-800/80 space-y-4">
                 <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
                     <span>⚡</span> Uygulama Kullanım Sıralaması
@@ -144,13 +152,14 @@
 
         <!-- Live Window Activity Feed -->
         <div class="glass rounded-2xl border border-slate-800/80 p-5 space-y-4">
-            <h2 class="text-sm font-semibold text-slate-200">Canlı Pencere Başlıkları & Detaylar</h2>
+            <h2 class="text-sm font-semibold text-slate-200">Canlı Pencere & Çalışma Akışı</h2>
             <div class="overflow-x-auto -mx-2 sm:mx-0">
-                <table class="w-full text-left text-xs text-slate-300 min-w-[540px]">
+                <table class="w-full text-left text-xs text-slate-300 min-w-[580px]">
                     <thead class="bg-slate-800/60 uppercase text-[10px] font-semibold text-slate-400 border-b border-slate-700/60">
                         <tr>
                             <th class="py-2.5 px-3">Zaman</th>
                             <th class="py-2.5 px-3">Proje</th>
+                            <th class="py-2.5 px-3">Git Branch</th>
                             <th class="py-2.5 px-3">Uygulama</th>
                             <th class="py-2.5 px-3">Pencere Başlığı</th>
                             <th class="py-2.5 px-3 text-right">Süre</th>
@@ -159,6 +168,34 @@
                     <tbody id="recentFeed" class="divide-y divide-slate-800">
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODERN MODAL: Pomodoro Timer -->
+    <div id="pomodoroModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="glass border border-slate-700/80 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl relative text-center">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">🍅</div>
+                    <h3 class="text-base font-bold text-slate-100">ERLİK Pomodoro Focus</h3>
+                </div>
+                <button onclick="closePomodoroModal()" class="text-slate-400 hover:text-slate-200 text-lg">&times;</button>
+            </div>
+
+            <div class="py-6">
+                <div id="pomodoroMode" class="text-xs uppercase font-semibold text-rose-400 tracking-wider mb-2">🔥 ODAKLANMA MODU</div>
+                <div id="pomodoroTimer" class="text-6xl font-bold font-mono text-white tracking-tight">25:00</div>
+                <p id="pomodoroInfo" class="text-xs text-slate-400 mt-2">25 dakika derin odaklanma, ardından 5 dakika dinlenme.</p>
+            </div>
+
+            <div class="flex justify-center gap-3">
+                <button onclick="togglePomodoro()" id="btnPomodoroToggle" class="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold tracking-wide transition shadow-lg shadow-rose-600/20">
+                    Başlat
+                </button>
+                <button onclick="resetPomodoro()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+                    Sıfırla
+                </button>
             </div>
         </div>
     </div>
@@ -178,6 +215,10 @@
                 <div>
                     <label class="block text-slate-300 font-medium mb-1">Alıcı E-Posta Adresi</label>
                     <input type="email" id="cfgEmail" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500 font-mono" placeholder="ornek@alanadi.com">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Günlük Odak Hedefi (Saat)</label>
+                    <input type="number" id="cfgGoal" min="1" max="16" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500 font-mono" placeholder="4">
                 </div>
                 <div>
                     <label class="block text-slate-300 font-medium mb-1">Discord / Slack Webhook URL (Opsiyonel)</label>
@@ -215,37 +256,6 @@
         </div>
     </div>
 
-    
-    <!-- MODERN MODAL: Pomodoro Timer -->
-    <div id="pomodoroModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
-        <div class="glass border border-slate-700/80 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl relative text-center">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">🍅</div>
-                    <h3 class="text-base font-bold text-slate-100">ERLİK Pomodoro Focus</h3>
-                </div>
-                <button onclick="closePomodoroModal()" class="text-slate-400 hover:text-slate-200 text-lg">&times;</button>
-            </div>
-
-            <!-- Pomodoro Clock Display -->
-            <div class="py-6">
-                <div id="pomodoroMode" class="text-xs uppercase font-semibold text-rose-400 tracking-wider mb-2">🔥 ODAKLANMA MODU</div>
-                <div id="pomodoroTimer" class="text-6xl font-bold font-mono text-white tracking-tight">25:00</div>
-                <p id="pomodoroInfo" class="text-xs text-slate-400 mt-2">25 dakika derin odaklanma, ardından 5 dakika dinlenme.</p>
-            </div>
-
-            <!-- Controls -->
-            <div class="flex justify-center gap-3">
-                <button onclick="togglePomodoro()" id="btnPomodoroToggle" class="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold tracking-wide transition shadow-lg shadow-rose-600/20">
-                    Başlat
-                </button>
-                <button onclick="resetPomodoro()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
-                    Sıfırla
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- MODERN TOAST NOTIFICATION -->
     <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition duration-300 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-xl shadow-2xl text-xs flex items-center gap-2">
         <span id="toastIcon">ℹ️</span>
@@ -267,30 +277,7 @@
             }, 3500);
         }
 
-        function setTimeRange(range) {
-            currentRange = range;
-            ['day', 'week', 'month'].forEach(r => {
-                const btn = document.getElementById('btn-' + r);
-                if (r === range) {
-                    btn.className = 'px-3 py-1.5 rounded-lg font-medium transition bg-sky-500 text-white';
-                } else {
-                    btn.className = 'px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200';
-                }
-            });
-            document.getElementById('rangeLabel').innerText = range === 'day' ? 'Son 24 Saat' : (range === 'week' ? 'Son 7 Gün' : 'Son 30 Gün');
-            fetchStats();
-        }
-
-        function fmtDuration(secs) {
-            if (secs < 60) return secs + ' sn';
-            const mins = Math.floor(secs / 60);
-            if (mins < 60) return mins + ' dk';
-            const hrs = (mins / 60).toFixed(1);
-            return hrs + ' sa';
-        }
-
-        
-        // POMODORO ENGINE
+        // Pomodoro State
         let pomodoroTime = 25 * 60;
         let pomodoroTimerInterval = null;
         let pomodoroIsRunning = false;
@@ -364,12 +351,35 @@
             updatePomodoroDisplay();
         }
 
+        function setTimeRange(range) {
+            currentRange = range;
+            ['day', 'week', 'month'].forEach(r => {
+                const btn = document.getElementById('btn-' + r);
+                if (r === range) {
+                    btn.className = 'px-3 py-1.5 rounded-lg font-medium transition bg-sky-500 text-white';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200';
+                }
+            });
+            document.getElementById('rangeLabel').innerText = range === 'day' ? 'Son 24 Saat' : (range === 'week' ? 'Son 7 Gün' : 'Son 30 Gün');
+            fetchStats();
+        }
+
+        function fmtDuration(secs) {
+            if (secs < 60) return secs + ' sn';
+            const mins = Math.floor(secs / 60);
+            if (mins < 60) return mins + ' dk';
+            const hrs = (mins / 60).toFixed(1);
+            return hrs + ' sa';
+        }
+
         async function openMailModal() {
             document.getElementById('mailModal').classList.remove('hidden');
             const res = await fetch('/api/settings');
             const cfg = await res.json();
             document.getElementById('cfgEmail').value = cfg.email || '';
             document.getElementById('cfgWebhook').value = cfg.webhook || '';
+            document.getElementById('cfgGoal').value = cfg.daily_goal_hours || 4;
         }
 
         function closeMailModal() {
@@ -387,13 +397,15 @@
         async function saveSettingsOnly() {
             const email = document.getElementById('cfgEmail').value;
             const webhook = document.getElementById('cfgWebhook').value;
+            const daily_goal_hours = document.getElementById('cfgGoal').value;
             await fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, webhook })
+                body: JSON.stringify({ email, webhook, daily_goal_hours })
             });
             showToast('Ayarlar başarıyla kaydedildi!', '💾');
             closeMailModal();
+            fetchStats();
         }
 
         async function dispatchMailReport() {
@@ -403,12 +415,13 @@
 
             const email = document.getElementById('cfgEmail').value;
             const webhook = document.getElementById('cfgWebhook').value;
+            const daily_goal_hours = document.getElementById('cfgGoal').value;
 
             try {
                 const res = await fetch('/api/send-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, webhook })
+                    body: JSON.stringify({ email, webhook, daily_goal_hours })
                 });
                 const d = await res.json();
                 showToast(d.message || 'Rapor başarıyla gönderildi!', '📨');
@@ -427,23 +440,27 @@
                 const data = await res.json();
 
                 document.getElementById('metricTotal').innerText = fmtDuration(data.total_active_seconds);
-                document.getElementById('metricAfk').innerText = fmtDuration(data.total_afk_seconds);
-                document.getElementById('metricSessions').innerText = data.total_events || 0;
+                document.getElementById('metricAiCoding').innerText = fmtDuration(data.total_ai_coding_seconds || 0);
                 
+                const goalHours = data.daily_goal_hours || 4;
+                const currentHours = (data.total_active_seconds / 3600);
+                const pct = Math.min(Math.round((currentHours / goalHours) * 100), 100);
+                document.getElementById('metricGoalPct').innerText = `Hedef (${goalHours} sa): %${pct}`;
+
                 if (data.projects && data.projects.length > 0) {
                     document.getElementById('metricTopProject').innerText = data.projects[0].project;
                     document.getElementById('metricTopProjectTime').innerText = fmtDuration(data.projects[0].total_sec);
                 }
 
-                // Render Projects (NEW)
+                // Render Projects & Branches
                 const projContainer = document.getElementById('projectContainer');
-                const maxProj = (data.projects && data.projects.length > 0) ? data.projects[0].total_sec : 1;
+                const maxProj = (data.projects && data.projects.length > 0) ? Math.max(...data.projects.map(p => p.total_sec), 1) : 1;
                 projContainer.innerHTML = (data.projects || []).map(p => {
                     const pct = Math.round((p.total_sec / maxProj) * 100);
                     return `
                         <div>
                             <div class="flex justify-between text-xs mb-1">
-                                <span class="font-semibold text-emerald-300">${p.project}</span>
+                                <span class="font-semibold text-emerald-300">${p.project} <span class="text-[10px] text-slate-400 font-mono">(${p.branch || '-'})</span></span>
                                 <span class="text-slate-400 font-mono">${fmtDuration(p.total_sec)}</span>
                             </div>
                             <div class="w-full bg-slate-800 rounded-full h-1.5">
@@ -471,12 +488,13 @@
                     `;
                 }).join('') || '<p class="text-xs text-slate-500">Kayıt yok.</p>';
 
-                // Render Table with Project tag
+                // Render Table with Git Branch
                 const feed = document.getElementById('recentFeed');
                 feed.innerHTML = data.recent.map(r => `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="py-2 px-3 font-mono text-slate-400 text-[11px]">${r.timestamp.split(' ')[1] || r.timestamp}</td>
                         <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${r.project_name}</span></td>
+                        <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-mono text-purple-300 bg-purple-500/10 border border-purple-500/20">${r.git_branch || '-'}</span></td>
                         <td class="py-2 px-3 font-semibold text-sky-400">${r.app_name}</td>
                         <td class="py-2 px-3 truncate max-w-xs text-slate-300" title="${r.window_title || ''}">${r.window_title || '-'}</td>
                         <td class="py-2 px-3 text-right font-mono text-emerald-400 font-medium">${fmtDuration(r.duration_seconds)}</td>
