@@ -112,8 +112,8 @@ const server = http.createServer((req, res) => {
         const afkRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND ${timeFilter};`);
         const countRes = querySQLite(`SELECT COUNT(*) as total FROM erlik_heartbeats WHERE ${timeFilter};`);
 
-        // AI Assisted coding metrics
-        const aiCodingRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} AND (app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Hermes%');`);
+        // AI Assisted & Agentic coding metrics
+        const aiCodingRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} AND (category LIKE '%AI%' OR category LIKE '%AGI%' OR app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%Codex%' OR app_name LIKE '%Windsurf%' OR app_name LIKE '%Devin%' OR app_name LIKE '%Aider%' OR app_name LIKE '%Hermes%' OR app_name LIKE '%OpenClaw%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Copilot%');`);
 
         const categories = querySQLite(`SELECT category, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY category ORDER BY total_sec DESC;`);
         const apps = querySQLite(`SELECT app_name, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY app_name ORDER BY total_sec DESC LIMIT 10;`);

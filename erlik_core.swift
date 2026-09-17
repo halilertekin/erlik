@@ -4,12 +4,12 @@ import Foundation
 
 // MARK: - App Category Resolver
 enum AppCategory: String {
-    case coding = "Yazılım & Terminal"
+    case coding = "Yazılım & IDE"
+    case agentic = "AI & AGI Ajanları"
     case design = "Tasarım & Medya"
     case browsing = "Tarayıcı & Web"
     case communication = "İletişim & Chat"
     case productivity = "Notlar & Ofis"
-    case agentic = "AI & Otomasyon"
     case system = "Sistem & Diğer"
 }
 
@@ -17,24 +17,69 @@ func categorizeApp(bundleId: String, appName: String) -> String {
     let lowerBundle = bundleId.lowercased()
     let lowerName = appName.lowercased()
 
-    if lowerBundle.contains("antigravity") || lowerBundle.contains("cursor") || lowerBundle.contains("codex") || lowerBundle.contains("zed") || lowerBundle.contains("xcode") || lowerBundle.contains("iterm") || lowerBundle.contains("terminal") || lowerBundle.contains("warp") || lowerBundle.contains("cmux") || lowerName.contains("zcode") || lowerName.contains("code") {
-        return AppCategory.coding.rawValue
-    }
-    if lowerBundle.contains("chrome") || lowerBundle.contains("safari") || lowerBundle.contains("arc") || lowerBundle.contains("brave") || lowerBundle.contains("browser") {
-        return AppCategory.browsing.rawValue
-    }
-    if lowerBundle.contains("figma") || lowerBundle.contains("canva") || lowerBundle.contains("photoshop") || lowerBundle.contains("illustrator") || lowerBundle.contains("bambustudio") {
-        return AppCategory.design.rawValue
-    }
-    if lowerBundle.contains("slack") || lowerBundle.contains("discord") || lowerBundle.contains("whatsapp") || lowerBundle.contains("telegram") || lowerBundle.contains("messages") || lowerBundle.contains("spark") {
-        return AppCategory.communication.rawValue
-    }
-    if lowerBundle.contains("notion") || lowerBundle.contains("notes") || lowerBundle.contains("linear") || lowerBundle.contains("word") || lowerBundle.contains("excel") || lowerBundle.contains("obsidian") {
-        return AppCategory.productivity.rawValue
-    }
-    if lowerName.contains("hermes") || lowerName.contains("agent") || lowerName.contains("openclaw") {
+    // 1. Autonomous AI Coding Agents & AGI Engines (Priority match)
+    if lowerBundle.contains("antigravity") || lowerBundle.contains("cursor") || lowerBundle.contains("codex") ||
+       lowerBundle.contains("hermes") || lowerBundle.contains("openclaw") || lowerBundle.contains("claude") ||
+       lowerBundle.contains("chatgpt") || lowerBundle.contains("copilot") || lowerBundle.contains("windsurf") ||
+       lowerBundle.contains("devin") || lowerBundle.contains("aider") || lowerBundle.contains("ollama") ||
+       lowerBundle.contains("lmstudio") || lowerName.contains("antigravity") || lowerName.contains("cursor") ||
+       lowerName.contains("codex") || lowerName.contains("hermes") || lowerName.contains("openclaw") ||
+       lowerName.contains("claude") || lowerName.contains("chatgpt") || lowerName.contains("windsurf") ||
+       lowerName.contains("copilot") || lowerName.contains("aider") || lowerName.contains("gemini") {
         return AppCategory.agentic.rawValue
     }
+
+    // 2. Comprehensive IDEs, Editors & Terminals
+    if lowerBundle.contains("vscode") || lowerBundle.contains("vscodium") || lowerBundle.contains("code") ||
+       lowerBundle.contains("zed") || lowerBundle.contains("xcode") || lowerBundle.contains("sublime") ||
+       lowerBundle.contains("jetbrains") || lowerBundle.contains("intellij") || lowerBundle.contains("pycharm") ||
+       lowerBundle.contains("webstorm") || lowerBundle.contains("goland") || lowerBundle.contains("clion") ||
+       lowerBundle.contains("rider") || lowerBundle.contains("datagrip") || lowerBundle.contains("fleet") ||
+       lowerBundle.contains("iterm") || lowerBundle.contains("terminal") || lowerBundle.contains("warp") ||
+       lowerBundle.contains("alacritty") || lowerBundle.contains("kitty") || lowerBundle.contains("wezterm") ||
+       lowerBundle.contains("hyper") || lowerBundle.contains("neovim") || lowerBundle.contains("macvim") ||
+       lowerBundle.contains("emacs") || lowerBundle.contains("nova") || lowerBundle.contains("textmate") ||
+       lowerBundle.contains("postman") || lowerBundle.contains("insomnia") || lowerBundle.contains("tableplus") ||
+       lowerBundle.contains("dbeaver") || lowerBundle.contains("docker") || lowerBundle.contains("sourcetree") ||
+       lowerBundle.contains("fork") || lowerName.contains("xcode") || lowerName.contains("code") ||
+       lowerName.contains("zed") || lowerName.contains("terminal") || lowerName.contains("warp") ||
+       lowerName.contains("iterm") || lowerName.contains("studio") || lowerName.contains("sublime") {
+        return AppCategory.coding.rawValue
+    }
+
+    // 3. Browsers
+    if lowerBundle.contains("chrome") || lowerBundle.contains("safari") || lowerBundle.contains("arc") ||
+       lowerBundle.contains("brave") || lowerBundle.contains("firefox") || lowerBundle.contains("edge") ||
+       lowerBundle.contains("orion") || lowerBundle.contains("opera") || lowerBundle.contains("vivaldi") ||
+       lowerBundle.contains("browser") || lowerName.contains("chrome") || lowerName.contains("safari") ||
+       lowerName.contains("arc") || lowerName.contains("brave") || lowerName.contains("firefox") {
+        return AppCategory.browsing.rawValue
+    }
+
+    // 4. Design & Creative
+    if lowerBundle.contains("figma") || lowerBundle.contains("canva") || lowerBundle.contains("photoshop") ||
+       lowerBundle.contains("illustrator") || lowerBundle.contains("bambustudio") || lowerBundle.contains("blender") ||
+       lowerBundle.contains("sketch") || lowerBundle.contains("affinity") || lowerBundle.contains("premiere") ||
+       lowerBundle.contains("aftereffects") || lowerBundle.contains("finalcut") || lowerBundle.contains("davinci") {
+        return AppCategory.design.rawValue
+    }
+
+    // 5. Communication & Team Chat
+    if lowerBundle.contains("slack") || lowerBundle.contains("discord") || lowerBundle.contains("whatsapp") ||
+       lowerBundle.contains("telegram") || lowerBundle.contains("messages") || lowerBundle.contains("spark") ||
+       lowerBundle.contains("mail") || lowerBundle.contains("zoom") || lowerBundle.contains("teams") ||
+       lowerBundle.contains("mattermost") {
+        return AppCategory.communication.rawValue
+    }
+
+    // 6. Notes & Productivity
+    if lowerBundle.contains("notion") || lowerBundle.contains("notes") || lowerBundle.contains("linear") ||
+       lowerBundle.contains("word") || lowerBundle.contains("excel") || lowerBundle.contains("obsidian") ||
+       lowerBundle.contains("craft") || lowerBundle.contains("bear") || lowerBundle.contains("reminders") ||
+       lowerBundle.contains("calendar") || lowerBundle.contains("trello") || lowerBundle.contains("jira") {
+        return AppCategory.productivity.rawValue
+    }
+
     return AppCategory.system.rawValue
 }
 
