@@ -12,12 +12,13 @@ struct I18n {
             "title": [.tr: "🐺 ERLİK Sistem & Odak Zekâsı", .en: "🐺 ERLİK System & Focus Intelligence", .nl: "🐺 ERLİK Systeem & Focus Intelligentie"],
             "open_dashboard": [.tr: "📊 Web Dashboard'u Aç", .en: "📊 Open Web Dashboard", .nl: "📊 Open Web Dashboard"],
             "pomodoro": [.tr: "🍅 Pomodoro Başlat/Durdur", .en: "🍅 Toggle Pomodoro", .nl: "🍅 Schakel Pomodoro In/Uit"],
-            "purge_ram": [.tr: "🧹 RAM & Önbellek Temizle (Purge)", .en: "🧹 Free RAM & Purge Cache", .nl: "🧹 RAM Vrijmaken & Cache Opschonen"],
+            "purge_ram": [.tr: "🧹 RAM & Önbellek Temizle", .en: "🧹 Free RAM & Purge Memory", .nl: "🧹 RAM Vrijmaken & Geheugen Opschonen"],
+            "clean_disk": [.tr: "🗑️ Sistem & Disk Önbelleğini Temizle", .en: "🗑️ Clean System & Disk Caches", .nl: "🗑️ Systeem & Schijfcache Opschonen"],
             "toggle_hardware": [.tr: "👁️ Disk/RAM Göster/Gizle", .en: "👁️ Toggle Disk/RAM Display", .nl: "👁️ Toon/Verberg Schijf & RAM"],
             "lang_select": [.tr: "🌐 Dil / Language / Taal", .en: "🌐 Dil / Language / Taal", .nl: "🌐 Dil / Language / Taal"],
             "quit": [.tr: "Çıkış", .en: "Quit", .nl: "Afsluiten"],
-            "purging": [.tr: "Temizleniyor...", .en: "Purging...", .nl: "Opschonen..."],
-            "purged": [.tr: "RAM Başarıyla Rahatlatıldı!", .en: "RAM Purged Successfully!", .nl: "RAM Succesvol Opgeschoond!"]
+            "purging": [.tr: "Temizleniyor...", .en: "Cleaning...", .nl: "Opschonen..."],
+            "purged": [.tr: "Bellek ve Önbellek Başarıyla Rahatlatıldı!", .en: "Memory & Caches Freed Successfully!", .nl: "Geheugen en Caches Succesvol Opgeschoond!"]
         ]
         return dict[key]?[lang] ?? key
     }
@@ -62,6 +63,7 @@ class ErlikMenuBarApp: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: I18n.t("open_dashboard", lang: currentLang), action: #selector(openDashboard), keyEquivalent: "d"))
         menu.addItem(NSMenuItem(title: I18n.t("pomodoro", lang: currentLang), action: #selector(togglePomodoro), keyEquivalent: "p"))
         menu.addItem(NSMenuItem(title: I18n.t("purge_ram", lang: currentLang), action: #selector(purgeRAM), keyEquivalent: "r"))
+        menu.addItem(NSMenuItem(title: I18n.t("clean_disk", lang: currentLang), action: #selector(cleanDisk), keyEquivalent: "c"))
         menu.addItem(NSMenuItem.separator())
         
         let toggleHW = NSMenuItem(title: "\(I18n.t("toggle_hardware", lang: currentLang)) [\(showHardwareMetrics ? "✓" : "✗")]", action: #selector(toggleHardware), keyEquivalent: "h")
@@ -159,11 +161,10 @@ class ErlikMenuBarApp: NSObject, NSApplicationDelegate {
     @objc func setLangNL() { currentLang = .nl; savePreferences(); buildMenu(); updateStatus() }
 
     @objc func purgeRAM() {
-        let originalTitle = statusItem?.button?.title
         statusItem?.button?.title = "🐺 🧹 \(I18n.t("purging", lang: currentLang))"
 
         DispatchQueue.global(qos: .userInitiated).async {
-            // macOS Disk Cache ve inaktif RAM'i boşalt
+            // 1. macOS Disk Cache ve inaktif sayfaları boşalt
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/usr/sbin/purge")
             try? task.run()
@@ -171,7 +172,31 @@ class ErlikMenuBarApp: NSObject, NSApplicationDelegate {
 
             DispatchQueue.main.async {
                 self.updateStatus()
-                // Bildirim gönder
+                let note = NSUserNotification()
+                note.title = "ERLIK"
+                note.informativeText = I18n.t("purged", lang: self.currentLang)
+                NSUserNotificationCenter.default.deliver(note)
+            }
+        }
+    }
+
+    @objc func cleanDisk() {
+        statusItem?.button?.title = "🐺 🗑️ \(I18n.t("purging", lang: currentLang))"
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            // 2. Sistem ve geliştirici disk önbelleklerini temizle (clean-all)
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            let cleanScript = "\(home)/code/erlik/erlik_clean.sh"
+            if FileManager.default.fileExists(atPath: cleanScript) {
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/bin/bash")
+                task.arguments = [cleanScript, "all"]
+                try? task.run()
+                task.waitUntilExit()
+            }
+
+            DispatchQueue.main.async {
+                self.updateStatus()
                 let note = NSUserNotification()
                 note.title = "ERLIK"
                 note.informativeText = I18n.t("purged", lang: self.currentLang)
