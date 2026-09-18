@@ -966,10 +966,11 @@
             }
         }
 
-        let currentDevice = 'all';
+        let currentDevice = localStorage.getItem('erlik_selected_device') || 'Halil Mac mini';
 
         function onDeviceChange(val) {
             currentDevice = val;
+            localStorage.setItem('erlik_selected_device', val);
             fetchStats();
         }
 
@@ -982,13 +983,16 @@
                 // Update Device Selector dropdown options if needed
                 const devSelect = document.getElementById('deviceSelector');
                 if (devSelect && data.devices && data.devices.length > 0) {
-                    const currentVal = devSelect.value || currentDevice;
-                    let opts = `<option value="all" class="bg-slate-900 text-slate-200">${t.deviceAll || 'Tüm Cihazlar'}</option>`;
+                    // If stored device not in list, fallback
+                    if (currentDevice !== 'all' && !data.devices.includes(currentDevice)) {
+                        currentDevice = data.devices[0] || 'all';
+                    }
+                    let opts = `<option value="all" class="bg-slate-900 text-slate-200" ${currentDevice === 'all' ? 'selected' : ''}>${t.deviceAll || 'Tüm Cihazlar (Toplam)'}</option>`;
                     data.devices.forEach(d => {
-                        opts += `<option value="${d}" class="bg-slate-900 text-slate-200" ${d === currentVal ? 'selected' : ''}>💻 ${d}</option>`;
+                        opts += `<option value="${d}" class="bg-slate-900 text-slate-200" ${d === currentDevice ? 'selected' : ''}>💻 ${d}</option>`;
                     });
                     devSelect.innerHTML = opts;
-                    devSelect.value = currentVal;
+                    devSelect.value = currentDevice;
                 }
 
                 document.getElementById('metricTotal').innerText = fmtDuration(data.total_active_seconds);

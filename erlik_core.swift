@@ -218,8 +218,23 @@ class ErlikDB {
         sqlite3_close(db)
     }
 
+    private static func getComputerName() -> String {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/sbin/scutil")
+        task.arguments = ["--get", "ComputerName"]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        try? task.run()
+        task.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        if let name = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            return name
+        }
+        return Host.current().localizedName ?? "Mac"
+    }
+
     private func setupTables() {
-        let defaultDev = Host.current().localizedName ?? "Mac"
+        let defaultDev = ErlikDB.getComputerName()
         let sql = """
         CREATE TABLE IF NOT EXISTS erlik_heartbeats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -245,14 +260,15 @@ class ErlikDB {
         sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN device_id TEXT DEFAULT '\(defaultDev)';", nil, nil, nil)
     }
 
-    func record(app: String, bundleId: String, project: String, branch: String, title: String, duration: Int, isAfk: Bool, deviceId: String = Host.current().localizedName ?? "MacBook") {
+    func record(app: String, bundleId: String, project: String, branch: String, title: String, duration: Int, isAfk: Bool, deviceId: String? = nil) {
+        let actualDev = deviceId ?? ErlikDB.getComputerName()
         let cat = isAfk ? "Boşta (AFK)" : categorizeApp(bundleId: bundleId, appName: app)
         let proj = isAfk ? "-" : project
         let br = isAfk ? "-" : branch
         let sql = "INSERT INTO erlik_heartbeats (device_id, app_name, bundle_id, category, project_name, git_branch, window_title, duration_seconds, is_afk) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"
         var stmt: OpaquePointer?
         if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
-            sqlite3_bind_text(stmt, 1, (deviceId as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 1, (actualDev as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 2, (app as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 3, (bundleId as NSString).utf8String, -1, nil)
             sqlite3_bind_text(stmt, 4, (cat as NSString).utf8String, -1, nil)

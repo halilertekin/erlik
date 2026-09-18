@@ -102,7 +102,7 @@ const server = http.createServer((req, res) => {
     } else if (parsedUrl.pathname === '/api/stats') {
         const range = parsedUrl.searchParams.get('range') || 'day';
         const device = parsedUrl.searchParams.get('device') || '';
-        let timeFilter = "timestamp >= datetime('now', '-1 day')";
+        let timeFilter = "timestamp >= date('now', 'start of day')";
         let timeGroup = "strftime('%H:00', timestamp)";
         
         if (range === 'week') {
@@ -119,7 +119,29 @@ const server = http.createServer((req, res) => {
             baseFilter += ` AND device_id = '${escapedDev}'`;
         }
 
-        const activeRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter};`);
+        // Active Calculation with multi-device concurrent overlap deduplication
+        let totalActiveSec = 0;
+        if (!device || device === 'all') {
+            // When all devices selected, calculate union of active seconds per timeline bucket to prevent inflating concurrent time
+            const unionRes = querySQLite(`
+                SELECT IFNULL(SUM(max_sec), 0) as total FROM (
+                    SELECT strftime('%Y-%m-%d %H:%M', timestamp) as minute_slot, MAX(duration_seconds) as max_sec
+                    FROM erlik_heartbeats 
+                    WHERE is_afk = 0 AND ${timeFilter}
+                    GROUP BY minute_slot
+                );
+            `);
+            totalActiveSec = unionRes[0] ? unionRes[0].total : 0;
+            // Fallback to max device if minute slot sampling yields lower
+            const perDevRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY device_id ORDER BY total DESC LIMIT 1;`);
+            if (perDevRes[0] && perDevRes[0].total > totalActiveSec) {
+                totalActiveSec = perDevRes[0].total;
+            }
+        } else {
+            const activeRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter};`);
+            totalActiveSec = activeRes[0] ? activeRes[0].total : 0;
+        }
+
         const afkRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND ${baseFilter};`);
         const countRes = querySQLite(`SELECT COUNT(*) as total FROM erlik_heartbeats WHERE ${baseFilter};`);
 

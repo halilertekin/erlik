@@ -4,39 +4,31 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 
 case "$1" in
     start)
+        pkill -f "$DIR/erlik-app" 2>/dev/null || true
         pkill -f "$DIR/erlik-daemon" 2>/dev/null || true
         pkill -f "$DIR/erlik_web.js" 2>/dev/null || true
         pkill -f "$DIR/erlik-menubar" 2>/dev/null || true
         
-        "$DIR/erlik-daemon" > "$DIR/daemon.log" 2>&1 &
-        node "$DIR/erlik_web.js" > "$DIR/web.log" 2>&1 &
-        "$DIR/erlik-menubar" > "$DIR/menubar.log" 2>&1 &
+        "$DIR/erlik-app" > "$DIR/app.log" 2>&1 &
         
-        echo "🐺 ERLİK Native Activity & Focus Intelligence v3.2 başlatıldı!"
+        echo "🐺 ERLİK Unified Native Core & WebUI v3.2 başlatıldı!"
         echo "📊 Modern Dashboard: http://localhost:5757"
         echo "🍎 macOS Menubar Widget devrede: Menü çubuğundaki kurt simgesini kontrol edin!"
         ;;
     stop)
+        pkill -f "$DIR/erlik-app" 2>/dev/null || true
         pkill -f "$DIR/erlik-daemon" 2>/dev/null || true
         pkill -f "$DIR/erlik_web.js" 2>/dev/null || true
         pkill -f "$DIR/erlik-menubar" 2>/dev/null || true
         echo "🛑 ERLİK tüm servisleriyle durduruldu."
         ;;
     status)
-        if pgrep -f "$DIR/erlik-daemon" >/dev/null; then
-            echo "🟢 ERLİK Daemon: ÇALIŞIYOR (PID: $(pgrep -f "$DIR/erlik-daemon" | head -1))"
+        if pgrep -f "$DIR/erlik-app" >/dev/null; then
+            echo "🟢 ERLİK Unified Core: ÇALIŞIYOR (PID: $(pgrep -f "$DIR/erlik-app" | head -1))"
+            echo "📊 Web Dashboard: http://localhost:5757"
+            echo "🍎 Status Bar: Aktif"
         else
-            echo "🔴 ERLİK Daemon: DURDU"
-        fi
-        if pgrep -f "$DIR/erlik_web.js" >/dev/null; then
-            echo "🟢 ERLİK Web UI: ÇALIŞIYOR (http://localhost:5757)"
-        else
-            echo "🔴 ERLİK Web UI: DURDU"
-        fi
-        if pgrep -f "$DIR/erlik-menubar" >/dev/null; then
-            echo "🟢 ERLİK Menubar: ÇALIŞIYOR (macOS Status Bar)"
-        else
-            echo "🔴 ERLİK Menubar: DURDU"
+            echo "🔴 ERLİK Unified Core: DURDU"
         fi
         ;;
     *)
