@@ -102,7 +102,7 @@ const server = http.createServer((req, res) => {
     } else if (parsedUrl.pathname === '/api/stats') {
         const range = parsedUrl.searchParams.get('range') || 'day';
         const device = parsedUrl.searchParams.get('device') || '';
-        let timeFilter = "timestamp >= date('now', 'start of day')";
+        let timeFilter = "timestamp >= datetime('now', 'localtime', 'start of day', 'utc')";
         let timeGroup = "strftime('%H:00', timestamp)";
         
         if (range === 'week') {

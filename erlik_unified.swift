@@ -251,6 +251,7 @@ class ErlikDB {
         CREATE INDEX IF NOT EXISTS idx_erlik_project ON erlik_heartbeats(project_name);
         CREATE INDEX IF NOT EXISTS idx_erlik_category ON erlik_heartbeats(category);
         CREATE UNIQUE INDEX IF NOT EXISTS idx_erlik_unique_heartbeat ON erlik_heartbeats(timestamp, device_id, app_name);
+        UPDATE erlik_heartbeats SET device_id = 'Halil MBP' WHERE device_id = 'MacBookPro-Local';
         """
         sqlite3_exec(db, sql, nil, nil, nil)
     }
@@ -438,7 +439,7 @@ class ErlikHTTPServer {
             let range = queryItems.first(where: { $0.name == "range" })?.value ?? "day"
             let device = queryItems.first(where: { $0.name == "device" })?.value ?? ""
 
-            var timeFilter = "timestamp >= date('now', 'start of day')"
+            var timeFilter = "timestamp >= datetime('now', 'localtime', 'start of day', 'utc')"
             var timeGroup = "strftime('%H:00', timestamp)"
             if range == "week" {
                 timeFilter = "timestamp >= datetime('now', '-7 days')"
@@ -454,9 +455,25 @@ class ErlikHTTPServer {
                 baseFilter += " AND device_id = '\(escaped)'"
             }
 
-            // Calculations
-            let activeJson = db.queryJSON(sql: "SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND \(baseFilter);")
-            let afkJson = db.queryJSON(sql: "SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND \(baseFilter);")
+            // Active and AFK duration calculation (capped at 60s per minute slot)
+            let activeSql = """
+            SELECT IFNULL(SUM(sec), 0) as total FROM (
+                SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec
+                FROM erlik_heartbeats 
+                WHERE is_afk = 0 AND \(baseFilter)
+                GROUP BY slot
+            );
+            """
+            let afkSql = """
+            SELECT IFNULL(SUM(sec), 0) as total FROM (
+                SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec
+                FROM erlik_heartbeats 
+                WHERE is_afk = 1 AND \(baseFilter)
+                GROUP BY slot
+            );
+            """
+            let activeJson = db.queryJSON(sql: activeSql)
+            let afkJson = db.queryJSON(sql: afkSql)
             let countJson = db.queryJSON(sql: "SELECT COUNT(*) as total FROM erlik_heartbeats WHERE \(baseFilter);")
 
             var totalActive = 0
@@ -483,11 +500,11 @@ class ErlikHTTPServer {
             // Multi-device active union calculation when "all" is selected
             if device.isEmpty || device == "all" {
                 let unionJson = db.queryJSON(sql: """
-                    SELECT IFNULL(SUM(max_sec), 0) as total FROM (
-                        SELECT strftime('%Y-%m-%d %H:%M', timestamp) as minute_slot, MAX(duration_seconds) as max_sec
+                    SELECT IFNULL(SUM(sec), 0) as total FROM (
+                        SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec
                         FROM erlik_heartbeats 
                         WHERE is_afk = 0 AND \(timeFilter)
-                        GROUP BY minute_slot
+                        GROUP BY slot
                     );
                 """)
                 if let data = unionJson.data(using: .utf8),

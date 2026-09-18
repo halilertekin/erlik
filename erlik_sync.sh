@@ -26,16 +26,17 @@ function sync_peer() {
     # 2. Push dump to remote peer and import
     if [ -s "$LOCAL_DUMP" ]; then
         scp -q -o ConnectTimeout=3 "$LOCAL_DUMP" "$PEER_HOST:$PEER_PATH/sync/delta_macmini.sql" 2>/dev/null
-        ssh -o ConnectTimeout=3 "$PEER_HOST" "sqlite3 '$PEER_PATH/erlik.db' < '$PEER_PATH/sync/delta_macmini.sql' 2>/dev/null; rm -f '$PEER_PATH/sync/delta_macmini.sql'" 2>/dev/null
+        ssh -o ConnectTimeout=3 "$PEER_HOST" "sqlite3 '$PEER_PATH/erlik.db' < '$PEER_PATH/sync/delta_macmini.sql' 2>/dev/null; sqlite3 '$PEER_PATH/erlik.db' \"UPDATE erlik_heartbeats SET device_id = 'Halil MBP' WHERE device_id = 'MacBookPro-Local';\" 2>/dev/null; rm -f '$PEER_PATH/sync/delta_macmini.sql'" 2>/dev/null
     fi
 
     # 3. Pull remote peer's delta
     REMOTE_DUMP_NAME="delta_mbp.sql"
-    ssh -o ConnectTimeout=3 "$PEER_HOST" "mkdir -p '$PEER_PATH/sync'; sqlite3 '$PEER_PATH/erlik.db' \"SELECT 'INSERT OR IGNORE INTO erlik_heartbeats (timestamp, device_id, app_name, bundle_id, category, project_name, git_branch, window_title, duration_seconds, is_afk) VALUES (''' || timestamp || ''', ''' || REPLACE(IFNULL(device_id, 'Halil MBP'), '''', '''''') || ''', ''' || REPLACE(app_name, '''', '''''') || ''', ''' || REPLACE(bundle_id, '''', '''''') || ''', ''' || REPLACE(category, '''', '''''') || ''', ''' || REPLACE(IFNULL(project_name, 'Genel'), '''', '''''') || ''', ''' || REPLACE(IFNULL(git_branch, '-'), '''', '''''') || ''', ''' || REPLACE(IFNULL(window_title, ''), '''', '''''') || ''', ' || duration_seconds || ', ' || is_afk || ');' FROM erlik_heartbeats WHERE timestamp >= datetime('now', '-2 hours');\" > '$PEER_PATH/sync/$REMOTE_DUMP_NAME' 2>/dev/null" 2>/dev/null
+    ssh -o ConnectTimeout=3 "$PEER_HOST" "mkdir -p '$PEER_PATH/sync'; sqlite3 '$PEER_PATH/erlik.db' \"SELECT 'INSERT OR IGNORE INTO erlik_heartbeats (timestamp, device_id, app_name, bundle_id, category, project_name, git_branch, window_title, duration_seconds, is_afk) VALUES (''' || timestamp || ''', ''' || REPLACE(CASE WHEN IFNULL(device_id, '') IN ('', 'MacBookPro-Local', 'Halil MBP') THEN 'Halil MBP' ELSE device_id END, '''', '''''') || ''', ''' || REPLACE(app_name, '''', '''''') || ''', ''' || REPLACE(bundle_id, '''', '''''') || ''', ''' || REPLACE(category, '''', '''''') || ''', ''' || REPLACE(IFNULL(project_name, 'Genel'), '''', '''''') || ''', ''' || REPLACE(IFNULL(git_branch, '-'), '''', '''''') || ''', ''' || REPLACE(IFNULL(window_title, ''), '''', '''''') || ''', ' || duration_seconds || ', ' || is_afk || ');' FROM erlik_heartbeats WHERE timestamp >= datetime('now', '-2 hours');\" > '$PEER_PATH/sync/$REMOTE_DUMP_NAME' 2>/dev/null" 2>/dev/null
 
     scp -q -o ConnectTimeout=3 "$PEER_HOST:$PEER_PATH/sync/$REMOTE_DUMP_NAME" "$SYNC_DIR/" 2>/dev/null
     if [ -s "$SYNC_DIR/$REMOTE_DUMP_NAME" ]; then
         sqlite3 "$DB_PATH" < "$SYNC_DIR/$REMOTE_DUMP_NAME" 2>/dev/null
+        sqlite3 "$DB_PATH" "UPDATE erlik_heartbeats SET device_id = 'Halil MBP' WHERE device_id = 'MacBookPro-Local';" 2>/dev/null
         rm -f "$SYNC_DIR/$REMOTE_DUMP_NAME"
     fi
 }
