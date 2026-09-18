@@ -249,6 +249,19 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({ success: false, error: e.message }));
             }
         });
+    } else if (parsedUrl.pathname === '/api/clean-cache' && req.method === 'POST') {
+        const { spawn } = require('child_process');
+        const scriptPath = path.join(__dirname, 'erlik_clean.sh');
+        const p = spawn('/bin/bash', [scriptPath, 'all'], { detached: true, stdio: 'ignore' });
+        p.unref();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Sistem & disk önbellek temizliği başlatıldı!' }));
+    } else if (parsedUrl.pathname === '/api/purge-ram' && req.method === 'POST') {
+        const { exec } = require('child_process');
+        exec('/usr/sbin/purge', (err) => {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, message: 'İnaktif RAM başarıyla boşaltıldı!' }));
+        });
     } else {
         res.writeHead(404);
         res.end('Not Found');
