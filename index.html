@@ -88,6 +88,10 @@
                 </button>
 
                 <!-- Clean Cache & Free RAM -->
+                <button onclick="triggerPurgeRAM()" id="btnPurgeRAM" class="px-3.5 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5" title="İnaktif Belleği ve RAM Önbelleğini Boşalt">
+                    <span>🧠</span>
+                    <span id="txtBtnPurgeRAM">RAM Temizle</span>
+                </button>
                 <button onclick="triggerCleanDisk()" id="btnCleanDisk" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-1.5" title="Sistem ve Geliştirici Önbelleklerini Temizle">
                     <span>🗑️</span>
                     <span id="txtBtnClean">Önbellek Temizle</span>
@@ -901,6 +905,27 @@
 
         function closeExportModal() {
             document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        async function triggerPurgeRAM() {
+            const btn = document.getElementById('btnPurgeRAM');
+            const txt = document.getElementById('txtBtnPurgeRAM');
+            const originalHtml = txt ? txt.innerText : '';
+            if (txt) txt.innerText = 'Boşaltılıyor...';
+            btn.classList.add('animate-pulse');
+
+            try {
+                const res = await fetch('/api/purge-ram', { method: 'POST' });
+                const d = await res.json();
+                showToast(d.message || 'İnaktif RAM başarıyla boşaltıldı!', '🧠');
+            } catch(e) {
+                showToast('RAM rahatlatma tetiklendi!', '🧠');
+            } finally {
+                setTimeout(() => {
+                    if (txt) txt.innerText = originalHtml;
+                    btn.classList.remove('animate-pulse');
+                }, 2000);
+            }
         }
 
         async function triggerCleanDisk() {

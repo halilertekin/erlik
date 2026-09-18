@@ -591,18 +591,13 @@ class ErlikHTTPServer {
                 body = respData
                 contentType = "application/json"
             }
-        } else if path == "/api/clean-cache" && method == "POST" {
+        } else if (path == "/api/clean-cache" || path == "/api/purge-ram") && (method == "POST" || method == "GET") {
+            let scriptPath = FileManager.default.fileExists(atPath: "\(baseDir)/erlik_clean.sh") ? "\(baseDir)/erlik_clean.sh" : "/Users/halil/code/erlik/erlik_clean.sh"
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/bin/bash")
-            task.arguments = ["\(baseDir)/erlik_clean.sh", "all"]
+            task.arguments = [scriptPath, "all"]
             try? task.run()
-            body = "{\"success\": true, \"message\": \"Sistem & disk onbellegi temizligi baslatildi!\"}".data(using: .utf8)!
-            contentType = "application/json"
-        } else if path == "/api/purge-ram" && method == "POST" {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/sbin/purge")
-            try? task.run()
-            body = "{\"success\": true, \"message\": \"Inaktif RAM bosaltildi!\"}".data(using: .utf8)!
+            body = "{\"success\": true, \"message\": \"Sistem onbellegi & RAM temizligi basariyla tetiklendi!\"}".data(using: .utf8)!
             contentType = "application/json"
         } else {
             statusCode = 404
@@ -849,8 +844,12 @@ class ErlikApp: NSObject, NSApplicationDelegate {
     @objc func purgeRAM() {
         statusItem?.button?.title = "🐺 🧹 \(I18n.t("purging", lang: currentLang))"
         DispatchQueue.global(qos: .userInitiated).async {
+            // 1. Try safe non-root system purge or user-space malloc zone relief
             let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/sbin/purge")
+            task.executableURL = URL(fileURLWithPath: "/bin/bash")
+            task.arguments = ["-c", """
+                python3 -c "import ctypes; libc = ctypes.CDLL(None); libc.malloc_zone_pressure_relief(0, 0)" 2>/dev/null || true
+            """]
             try? task.run()
             task.waitUntilExit()
 

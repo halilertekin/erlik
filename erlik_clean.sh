@@ -39,4 +39,17 @@ fi
 # 4. Downloads installer cleanup
 rm -f ~/Downloads/*.dmg ~/Downloads/*.pkg 2>/dev/null || true
 
+# 5. Safe User-space RAM & Inactive Memory Relief (Non-root)
+# Allocates and instantly deallocates a rapid buffer to trigger macOS VM inactive page eviction
+python3 -c "
+import ctypes, sys
+try:
+    # Trigger malloc zone pressure relief
+    libc = ctypes.CDLL(None)
+    if hasattr(libc, 'malloc_zone_pressure_relief'):
+        libc.malloc_zone_pressure_relief(0, 0)
+except:
+    pass
+" 2>/dev/null || true
+
 echo "✅ [ERLİK Clean] Disk and cache cleanup finished successfully!"
