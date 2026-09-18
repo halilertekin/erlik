@@ -1,6 +1,6 @@
 {
   "name": "erlik",
-  "version": "3.2.0",
+  "version": "3.2.2",
   "description": "Apple Silicon (ARM64) Native Activity & Focus Intelligence Tracker for macOS",
   "main": "erlik_web.js",
   "bin": {
