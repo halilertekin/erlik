@@ -244,12 +244,16 @@
                         </div>
                         <div class="text-[11px] text-slate-400 space-y-1">
                             <div class="flex justify-between font-mono">
-                                <span>M2.7 Window:</span>
-                                <span class="text-slate-200 font-semibold">1,500 req / 5 hrs</span>
+                                <span>Trafik Durumu:</span>
+                                <span id="statusMinimaxPeak" class="text-emerald-400 font-semibold">Normal (Off-Peak)</span>
                             </div>
                             <div class="flex justify-between font-mono">
-                                <span>5-Saat Reset:</span>
+                                <span>5-Saatlik Slot Reset:</span>
                                 <span id="cdMinimax" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 flex justify-between pt-0.5">
+                                <span>Peak: 09:00-11:30 CEST</span>
+                                <span class="text-sky-400 font-mono">Dynamic Throttling</span>
                             </div>
                             <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
                                 <div id="barMinimax" class="bg-sky-400 h-full rounded-full transition-all" style="width: 65%"></div>
@@ -264,16 +268,20 @@
                                 <span class="w-2 h-2 rounded-full bg-orange-400"></span>
                                 <span class="text-xs font-bold text-slate-200">Alibaba DashScope (Qwen)</span>
                             </div>
-                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-300 border border-orange-500/20">LiveTranslate</span>
+                            <span id="badgeAlibabaTariff" class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Off-Peak İndirimli</span>
                         </div>
                         <div class="text-[11px] text-slate-400 space-y-1">
                             <div class="flex justify-between font-mono">
-                                <span>Tier Durumu:</span>
-                                <span class="text-emerald-400 font-semibold">Active Tier-1</span>
+                                <span>Tarife Modu:</span>
+                                <span id="statusAlibabaRate" class="text-emerald-400 font-semibold">İndirimli (Off-Peak)</span>
                             </div>
                             <div class="flex justify-between font-mono">
                                 <span>Günlük Kota Sıfırlama:</span>
                                 <span id="cdAlibaba" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 flex justify-between pt-0.5">
+                                <span>İndirim: 16:00-02:00 CEST</span>
+                                <span class="text-orange-400 font-mono">Düşük Tüketim</span>
                             </div>
                             <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
                                 <div id="barAlibaba" class="bg-orange-400 h-full rounded-full transition-all" style="width: 80%"></div>
@@ -286,18 +294,22 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                                <span class="text-xs font-bold text-slate-200">Claude / Anthropic 5h</span>
+                                <span class="text-xs font-bold text-slate-200">Claude / Anthropic</span>
                             </div>
-                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">Pro/Team</span>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">Peak Throttling Yok</span>
                         </div>
                         <div class="text-[11px] text-slate-400 space-y-1">
                             <div class="flex justify-between font-mono">
-                                <span>Rolling Slot:</span>
-                                <span class="text-slate-200 font-semibold">5 Saatlik Limit</span>
+                                <span>Sistem Durumu:</span>
+                                <span class="text-emerald-400 font-semibold">2x Kapasite / 100% Hız</span>
                             </div>
                             <div class="flex justify-between font-mono">
-                                <span>Yeni Pencere:</span>
+                                <span>5h Kayan Pencere:</span>
                                 <span id="cdClaude" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 flex justify-between pt-0.5">
+                                <span>Rolling Slot</span>
+                                <span class="text-amber-400 font-mono">Pro & Max Uncapped</span>
                             </div>
                             <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
                                 <div id="barClaude" class="bg-amber-400 h-full rounded-full transition-all" style="width: 45%"></div>
@@ -316,12 +328,16 @@
                         </div>
                         <div class="text-[11px] text-slate-400 space-y-1">
                             <div class="flex justify-between font-mono">
-                                <span>Pencere (Window):</span>
-                                <span class="text-slate-200 font-semibold">3 Saatlik Döngü</span>
+                                <span>Talep Durumu:</span>
+                                <span id="statusGptDemand" class="text-slate-200 font-semibold">Normal</span>
                             </div>
                             <div class="flex justify-between font-mono">
-                                <span>Limit Tazeleme:</span>
+                                <span>3h Limit Tazeleme:</span>
                                 <span id="cdChatGpt" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 flex justify-between pt-0.5">
+                                <span>Batch: %50 İndirim</span>
+                                <span class="text-emerald-400 font-mono">Cache: %90 İndirim</span>
                             </div>
                             <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
                                 <div id="barChatGpt" class="bg-emerald-400 h-full rounded-full transition-all" style="width: 70%"></div>
@@ -336,16 +352,20 @@
                                 <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
                                 <span class="text-xs font-bold text-slate-200">Z.ai / Zhipu GLM-4</span>
                             </div>
-                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Coding Plan</span>
+                            <span id="badgeZaiTariff" class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">%50 Off-Peak</span>
                         </div>
                         <div class="text-[11px] text-slate-400 space-y-1">
                             <div class="flex justify-between font-mono">
-                                <span>Kota:</span>
-                                <span class="text-slate-200 font-semibold">Prepaid / TPM Limit</span>
+                                <span>Tarife Durumu:</span>
+                                <span id="statusZaiRate" class="text-emerald-400 font-semibold">%50 İndirimli</span>
                             </div>
                             <div class="flex justify-between font-mono">
-                                <span>Dakikalık RPM Cooldown:</span>
-                                <span id="cdZai" class="text-emerald-400 font-bold">HAZIR (Idle)</span>
+                                <span>Off-Peak / Reset:</span>
+                                <span id="cdZai" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 flex justify-between pt-0.5">
+                                <span>Peak: 08:00-12:00 CEST</span>
+                                <span class="text-indigo-400 font-mono">Hafta Sonu Full %50</span>
                             </div>
                             <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
                                 <div id="barZai" class="bg-indigo-400 h-full rounded-full transition-all" style="width: 100%"></div>
@@ -364,12 +384,16 @@
                         </div>
                         <div class="text-[11px] text-slate-400 space-y-1">
                             <div class="flex justify-between font-mono">
-                                <span>Kapasite:</span>
-                                <span class="text-slate-200 font-semibold">Auto-Throttling Guard</span>
+                                <span>Global Küme Yükü:</span>
+                                <span id="cdAntigravity" class="text-emerald-400 font-bold">Düşük Yoğunluk (Fast)</span>
                             </div>
                             <div class="flex justify-between font-mono">
-                                <span>Peak Saati Durumu:</span>
-                                <span id="cdAntigravity" class="text-emerald-400 font-bold">Düşük Yoğunluk (Fast)</span>
+                                <span>Kapasite Koruması:</span>
+                                <span class="text-purple-300 font-semibold">Auto-Throttling Guard</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 flex justify-between pt-0.5">
+                                <span>Peak: 16:00-23:00 CEST</span>
+                                <span class="text-purple-400 font-mono">ABD/AB Çakışması</span>
                             </div>
                             <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
                                 <div id="barAntigravity" class="bg-purple-400 h-full rounded-full transition-all" style="width: 90%"></div>
@@ -1121,13 +1145,33 @@
             }
         }
 
-        // Dynamic Cooldown & Peak Hour Timers
+        // Dynamic Cooldown & Peak Hour Timers (Officially Synced to Provider Policies)
         function updateCooldownCountdowns() {
             const now = new Date();
-
-            // 1. MiniMax 5-hour rolling slot countdown (Aligned to standard 5h epoch blocks: 00:00, 05:00, 10:00, 15:00, 20:00)
-            const mmSlotHours = [0, 5, 10, 15, 20, 25];
             const currentHour = now.getHours();
+            const currentMin = now.getMinutes();
+            const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
+
+            // 1. MiniMax Peak & Rolling Window (Official Peak: Weekdays 15:00 - 17:30 Beijing / 09:00 - 11:30 CEST)
+            const isWeekday = (currentDay >= 1 && currentDay <= 5);
+            const isMinimaxPeak = isWeekday && (
+                (currentHour === 9) || 
+                (currentHour === 10) || 
+                (currentHour === 11 && currentMin < 30)
+            );
+            const elMmStatus = document.getElementById('statusMinimaxPeak');
+            if (elMmStatus) {
+                if (isMinimaxPeak) {
+                    elMmStatus.innerText = '⚠️ Peak (Throttled)';
+                    elMmStatus.className = 'text-amber-400 font-semibold';
+                } else {
+                    elMmStatus.innerText = '⚡ Normal (Off-Peak)';
+                    elMmStatus.className = 'text-emerald-400 font-semibold';
+                }
+            }
+
+            // MiniMax 5h rolling slot reset (00, 05, 10, 15, 20)
+            const mmSlotHours = [0, 5, 10, 15, 20, 25];
             const nextMmHour = mmSlotHours.find(h => h > currentHour) || 24;
             const targetMm = new Date(now);
             targetMm.setHours(nextMmHour % 24, 0, 0, 0);
@@ -1139,11 +1183,11 @@
             const elMm = document.getElementById('cdMinimax');
             if (elMm) elMm.innerText = `${hMm}:${mMm}:${sMm}`;
 
-            // 2. Claude Anthropic 5-hour window
+            // 2. Claude Anthropic 5-hour window (Peak-Hour throttling officially removed by Anthropic)
             const elCl = document.getElementById('cdClaude');
             if (elCl) elCl.innerText = `${hMm}:${mMm}:${sMm}`;
 
-            // 3. ChatGPT 3-hour sliding window (00, 03, 06, 09, 12, 15, 18, 21)
+            // 3. ChatGPT 3-hour sliding window (00, 03, 06, 09, 12, 15, 18, 21) & Demand Status
             const gptSlots = [0, 3, 6, 9, 12, 15, 18, 21, 24];
             const nextGptHour = gptSlots.find(h => h > currentHour) || 24;
             const targetGpt = new Date(now);
@@ -1155,10 +1199,43 @@
             const sGpt = (diffGpt % 60).toString().padStart(2, '0');
             const elGpt = document.getElementById('cdChatGpt');
             if (elGpt) elGpt.innerText = `${hGpt}:${mGpt}:${sGpt}`;
+            
+            const elGptDemand = document.getElementById('statusGptDemand');
+            if (elGptDemand) {
+                if (currentHour >= 15 && currentHour <= 22) {
+                    elGptDemand.innerText = 'Yüksek Talep (US Active)';
+                    elGptDemand.className = 'text-amber-400 font-semibold';
+                } else {
+                    elGptDemand.innerText = 'Normal (Low Latency)';
+                    elGptDemand.className = 'text-emerald-400 font-semibold';
+                }
+            }
 
-            // 4. Alibaba DashScope Daily Reset (Midnight Beijing Time UTC+8 -> 18:00 CEST / 16:00 UTC)
+            // 4. Alibaba DashScope (Official Off-Peak: 22:00 - 08:00 Beijing / 16:00 - 02:00 CEST)
+            // During off-peak, token plan consumption is discounted / lower credit multiplier
+            const isAlibabaOffPeak = (currentHour >= 16 || currentHour < 2);
+            const elAliBadge = document.getElementById('badgeAlibabaTariff');
+            const elAliRate = document.getElementById('statusAlibabaRate');
+            if (elAliRate && elAliBadge) {
+                if (isAlibabaOffPeak) {
+                    elAliRate.innerText = '⚡ İndirimli (Off-Peak)';
+                    elAliRate.className = 'text-emerald-400 font-semibold';
+                    elAliBadge.innerText = 'Off-Peak İndirimli';
+                    elAliBadge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20';
+                } else {
+                    elAliRate.innerText = 'Standard (Peak)';
+                    elAliRate.className = 'text-amber-400 font-semibold';
+                    elAliBadge.innerText = 'Standart Tarife';
+                    elAliBadge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20';
+                }
+            }
+
+            // Alibaba Beijing Midnight Daily Reset (18:00 CEST)
             const targetAli = new Date(now);
-            targetAli.setHours(24, 0, 0, 0);
+            if (currentHour >= 18) {
+                targetAli.setDate(targetAli.getDate() + 1);
+            }
+            targetAli.setHours(18, 0, 0, 0);
             const diffAli = Math.max(0, Math.floor((targetAli - now) / 1000));
             const hAli = Math.floor(diffAli / 3600).toString().padStart(2, '0');
             const mAli = Math.floor((diffAli % 3600) / 60).toString().padStart(2, '0');
@@ -1166,14 +1243,63 @@
             const elAli = document.getElementById('cdAlibaba');
             if (elAli) elAli.innerText = `${hAli}:${mAli}:${sAli}`;
 
-            // 5. Antigravity & Global Peak Hours (Global Peak: 14:00 - 20:00 UTC / 16:00 - 22:00 Local)
+            // 5. Zhipu AI / Z.ai GLM Coding Plan (Peak: 14:00 - 18:00 Beijing / 08:00 - 12:00 CEST Weekdays)
+            // Off-peak: 50% discount. Weekends: 100% off-peak all day!
+            const isWeekend = (currentDay === 0 || currentDay === 6);
+            const isZaiPeak = !isWeekend && (currentHour >= 8 && currentHour < 12);
+            const elZaiBadge = document.getElementById('badgeZaiTariff');
+            const elZaiRate = document.getElementById('statusZaiRate');
+            const elZaiCd = document.getElementById('cdZai');
+            if (elZaiRate && elZaiBadge && elZaiCd) {
+                if (isWeekend) {
+                    elZaiRate.innerText = '🎉 Hafta Sonu (%50 İndirim)';
+                    elZaiRate.className = 'text-emerald-400 font-semibold';
+                    elZaiBadge.innerText = 'Hafta Sonu Full %50';
+                    elZaiBadge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20';
+                    elZaiCd.innerText = 'İNDİRİMLİ MOD AKTİF';
+                    elZaiCd.className = 'text-emerald-400 font-bold';
+                } else if (isZaiPeak) {
+                    elZaiRate.innerText = 'Standart Kredi (Peak)';
+                    elZaiRate.className = 'text-amber-400 font-semibold';
+                    elZaiBadge.innerText = 'Peak Saati';
+                    elZaiBadge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20';
+                    
+                    // Countdown to 12:00 CEST
+                    const targetZai = new Date(now);
+                    targetZai.setHours(12, 0, 0, 0);
+                    const diffZai = Math.max(0, Math.floor((targetZai - now) / 1000));
+                    const hZ = Math.floor(diffZai / 3600).toString().padStart(2, '0');
+                    const mZ = Math.floor((diffZai % 3600) / 60).toString().padStart(2, '0');
+                    const sZ = (diffZai % 60).toString().padStart(2, '0');
+                    elZaiCd.innerText = `%50 İndirime: ${hZ}:${mZ}:${sZ}`;
+                    elZaiCd.className = 'text-amber-400 font-bold';
+                } else {
+                    elZaiRate.innerText = '⚡ %50 İndirimli (Off-Peak)';
+                    elZaiRate.className = 'text-emerald-400 font-semibold';
+                    elZaiBadge.innerText = '%50 Off-Peak';
+                    elZaiBadge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20';
+                    
+                    // Countdown to next peak (tomorrow 08:00 if late, or today 08:00 if early morning)
+                    const targetZaiPeak = new Date(now);
+                    if (currentHour >= 12) targetZaiPeak.setDate(targetZaiPeak.getDate() + 1);
+                    targetZaiPeak.setHours(8, 0, 0, 0);
+                    const diffZaiP = Math.max(0, Math.floor((targetZaiPeak - now) / 1000));
+                    const hZP = Math.floor(diffZaiP / 3600).toString().padStart(2, '0');
+                    const mZP = Math.floor((diffZaiP % 3600) / 60).toString().padStart(2, '0');
+                    const sZP = (diffZaiP % 60).toString().padStart(2, '0');
+                    elZaiCd.innerText = `Peake Kalan: ${hZP}:${mZP}:${sZP}`;
+                    elZaiCd.className = 'text-emerald-400 font-bold';
+                }
+            }
+
+            // 6. Antigravity & Global Cluster Peak Hours (Global Peak: 16:00 - 23:00 CEST)
             const elAg = document.getElementById('cdAntigravity');
             if (elAg) {
-                if (currentHour >= 15 && currentHour <= 22) {
-                    elAg.innerText = '⚠️ Peak Saati (Yoğun)';
+                if (currentHour >= 16 && currentHour <= 23) {
+                    elAg.innerText = '⚠️ Yoğun Dönem (High Demand)';
                     elAg.className = 'text-rose-400 font-bold';
                 } else {
-                    elAg.innerText = '⚡ Düşük Yoğunluk (Fast)';
+                    elAg.innerText = '⚡ Sakin / Düşük Gecikme (Fast)';
                     elAg.className = 'text-emerald-400 font-bold';
                 }
             }
