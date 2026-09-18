@@ -182,7 +182,11 @@ const server = http.createServer((req, res) => {
         const devices = querySQLite(`SELECT DISTINCT IFNULL(device_id, 'Halil Mac mini') as device FROM erlik_heartbeats ORDER BY device ASC;`);
 
         const cfg = loadConfig();
+        const pkgVersion = require('./package.json').version || '3.2.2';
+        const os = require('os');
         const payload = {
+            version: pkgVersion,
+            local_device: os.hostname(),
             total_active_seconds: totalActiveSec,
             total_afk_seconds: afkRes[0] ? afkRes[0].total : 0,
             total_ai_coding_seconds: totalAiSec,
