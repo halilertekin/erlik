@@ -222,6 +222,162 @@
             <div id="agentBreakdownGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-2">
                 <!-- Injected via JavaScript -->
             </div>
+
+            <!-- Provider Token Plans, Peak Hours & Cooldown Matrix -->
+            <div class="pt-3 border-t border-purple-500/20 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <span>⚡</span> AI Model Token Plans & Cooldown Tracker
+                    </h3>
+                    <span class="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono">Dynamic Quota & Peak Sync</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- MiniMax Token Plan Card -->
+                    <div class="bg-slate-900/90 border border-slate-800 hover:border-sky-500/40 rounded-xl p-3 space-y-2 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                                <span class="text-xs font-bold text-slate-200">MiniMax Token Plan</span>
+                            </div>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">Starter / Plus</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1">
+                            <div class="flex justify-between font-mono">
+                                <span>M2.7 Window:</span>
+                                <span class="text-slate-200 font-semibold">1,500 req / 5 hrs</span>
+                            </div>
+                            <div class="flex justify-between font-mono">
+                                <span>5-Saat Reset:</span>
+                                <span id="cdMinimax" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                                <div id="barMinimax" class="bg-sky-400 h-full rounded-full transition-all" style="width: 65%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alibaba DashScope Card -->
+                    <div class="bg-slate-900/90 border border-slate-800 hover:border-orange-500/40 rounded-xl p-3 space-y-2 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                                <span class="text-xs font-bold text-slate-200">Alibaba DashScope (Qwen)</span>
+                            </div>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-300 border border-orange-500/20">LiveTranslate</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1">
+                            <div class="flex justify-between font-mono">
+                                <span>Tier Durumu:</span>
+                                <span class="text-emerald-400 font-semibold">Active Tier-1</span>
+                            </div>
+                            <div class="flex justify-between font-mono">
+                                <span>Günlük Kota Sıfırlama:</span>
+                                <span id="cdAlibaba" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                                <div id="barAlibaba" class="bg-orange-400 h-full rounded-full transition-all" style="width: 80%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Claude 3.7 & Anthropic Window -->
+                    <div class="bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-xl p-3 space-y-2 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                                <span class="text-xs font-bold text-slate-200">Claude / Anthropic 5h</span>
+                            </div>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">Pro/Team</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1">
+                            <div class="flex justify-between font-mono">
+                                <span>Rolling Slot:</span>
+                                <span class="text-slate-200 font-semibold">5 Saatlik Limit</span>
+                            </div>
+                            <div class="flex justify-between font-mono">
+                                <span>Yeni Pencere:</span>
+                                <span id="cdClaude" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                                <div id="barClaude" class="bg-amber-400 h-full rounded-full transition-all" style="width: 45%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ChatGPT Plus / Codex Rate Limit -->
+                    <div class="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 rounded-xl p-3 space-y-2 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                <span class="text-xs font-bold text-slate-200">ChatGPT & Codex Rate</span>
+                            </div>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">3h Dynamic</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1">
+                            <div class="flex justify-between font-mono">
+                                <span>Pencere (Window):</span>
+                                <span class="text-slate-200 font-semibold">3 Saatlik Döngü</span>
+                            </div>
+                            <div class="flex justify-between font-mono">
+                                <span>Limit Tazeleme:</span>
+                                <span id="cdChatGpt" class="text-amber-400 font-bold">--:--:--</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                                <div id="barChatGpt" class="bg-emerald-400 h-full rounded-full transition-all" style="width: 70%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Z.ai / GLM-4 Token Plan -->
+                    <div class="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/40 rounded-xl p-3 space-y-2 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                                <span class="text-xs font-bold text-slate-200">Z.ai / Zhipu GLM-4</span>
+                            </div>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Coding Plan</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1">
+                            <div class="flex justify-between font-mono">
+                                <span>Kota:</span>
+                                <span class="text-slate-200 font-semibold">Prepaid / TPM Limit</span>
+                            </div>
+                            <div class="flex justify-between font-mono">
+                                <span>Dakikalık RPM Cooldown:</span>
+                                <span id="cdZai" class="text-emerald-400 font-bold">HAZIR (Idle)</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                                <div id="barZai" class="bg-indigo-400 h-full rounded-full transition-all" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Antigravity / Gemini Pro Quota -->
+                    <div class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/40 rounded-xl p-3 space-y-2 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                                <span class="text-xs font-bold text-slate-200">Antigravity / Gemini AGI</span>
+                            </div>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">Active Session</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1">
+                            <div class="flex justify-between font-mono">
+                                <span>Kapasite:</span>
+                                <span class="text-slate-200 font-semibold">Auto-Throttling Guard</span>
+                            </div>
+                            <div class="flex justify-between font-mono">
+                                <span>Peak Saati Durumu:</span>
+                                <span id="cdAntigravity" class="text-emerald-400 font-bold">Düşük Yoğunluk (Fast)</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                                <div id="barAntigravity" class="bg-purple-400 h-full rounded-full transition-all" style="width: 90%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Live Window Activity Feed -->
@@ -965,9 +1121,69 @@
             }
         }
 
+        // Dynamic Cooldown & Peak Hour Timers
+        function updateCooldownCountdowns() {
+            const now = new Date();
+
+            // 1. MiniMax 5-hour rolling slot countdown (Aligned to standard 5h epoch blocks: 00:00, 05:00, 10:00, 15:00, 20:00)
+            const mmSlotHours = [0, 5, 10, 15, 20, 25];
+            const currentHour = now.getHours();
+            const nextMmHour = mmSlotHours.find(h => h > currentHour) || 24;
+            const targetMm = new Date(now);
+            targetMm.setHours(nextMmHour % 24, 0, 0, 0);
+            if (nextMmHour >= 24) targetMm.setDate(targetMm.getDate() + 1);
+            const diffMm = Math.max(0, Math.floor((targetMm - now) / 1000));
+            const hMm = Math.floor(diffMm / 3600).toString().padStart(2, '0');
+            const mMm = Math.floor((diffMm % 3600) / 60).toString().padStart(2, '0');
+            const sMm = (diffMm % 60).toString().padStart(2, '0');
+            const elMm = document.getElementById('cdMinimax');
+            if (elMm) elMm.innerText = `${hMm}:${mMm}:${sMm}`;
+
+            // 2. Claude Anthropic 5-hour window
+            const elCl = document.getElementById('cdClaude');
+            if (elCl) elCl.innerText = `${hMm}:${mMm}:${sMm}`;
+
+            // 3. ChatGPT 3-hour sliding window (00, 03, 06, 09, 12, 15, 18, 21)
+            const gptSlots = [0, 3, 6, 9, 12, 15, 18, 21, 24];
+            const nextGptHour = gptSlots.find(h => h > currentHour) || 24;
+            const targetGpt = new Date(now);
+            targetGpt.setHours(nextGptHour % 24, 0, 0, 0);
+            if (nextGptHour >= 24) targetGpt.setDate(targetGpt.getDate() + 1);
+            const diffGpt = Math.max(0, Math.floor((targetGpt - now) / 1000));
+            const hGpt = Math.floor(diffGpt / 3600).toString().padStart(2, '0');
+            const mGpt = Math.floor((diffGpt % 3600) / 60).toString().padStart(2, '0');
+            const sGpt = (diffGpt % 60).toString().padStart(2, '0');
+            const elGpt = document.getElementById('cdChatGpt');
+            if (elGpt) elGpt.innerText = `${hGpt}:${mGpt}:${sGpt}`;
+
+            // 4. Alibaba DashScope Daily Reset (Midnight Beijing Time UTC+8 -> 18:00 CEST / 16:00 UTC)
+            const targetAli = new Date(now);
+            targetAli.setHours(24, 0, 0, 0);
+            const diffAli = Math.max(0, Math.floor((targetAli - now) / 1000));
+            const hAli = Math.floor(diffAli / 3600).toString().padStart(2, '0');
+            const mAli = Math.floor((diffAli % 3600) / 60).toString().padStart(2, '0');
+            const sAli = (diffAli % 60).toString().padStart(2, '0');
+            const elAli = document.getElementById('cdAlibaba');
+            if (elAli) elAli.innerText = `${hAli}:${mAli}:${sAli}`;
+
+            // 5. Antigravity & Global Peak Hours (Global Peak: 14:00 - 20:00 UTC / 16:00 - 22:00 Local)
+            const elAg = document.getElementById('cdAntigravity');
+            if (elAg) {
+                if (currentHour >= 15 && currentHour <= 22) {
+                    elAg.innerText = '⚠️ Peak Saati (Yoğun)';
+                    elAg.className = 'text-rose-400 font-bold';
+                } else {
+                    elAg.innerText = '⚡ Düşük Yoğunluk (Fast)';
+                    elAg.className = 'text-emerald-400 font-bold';
+                }
+            }
+        }
+
         // Initialize Language & Data
         setLanguage(currentLang);
         setInterval(fetchStats, 5000);
+        setInterval(updateCooldownCountdowns, 1000);
+        updateCooldownCountdowns();
     </script>
 </body>
 </html>
