@@ -219,11 +219,12 @@ class ErlikDB {
     }
 
     private func setupTables() {
+        let defaultDev = Host.current().localizedName ?? "Mac"
         let sql = """
         CREATE TABLE IF NOT EXISTS erlik_heartbeats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            device_id TEXT DEFAULT 'MacBookPro-Local',
+            device_id TEXT DEFAULT '\(defaultDev)',
             app_name TEXT NOT NULL,
             bundle_id TEXT NOT NULL,
             category TEXT NOT NULL,
@@ -241,7 +242,7 @@ class ErlikDB {
         """
         sqlite3_exec(db, sql, nil, nil, nil)
         sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN git_branch TEXT DEFAULT '-';", nil, nil, nil)
-        sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN device_id TEXT DEFAULT 'MacBookPro-Local';", nil, nil, nil)
+        sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN device_id TEXT DEFAULT '\(defaultDev)';", nil, nil, nil)
     }
 
     func record(app: String, bundleId: String, project: String, branch: String, title: String, duration: Int, isAfk: Bool, deviceId: String = Host.current().localizedName ?? "MacBook") {

@@ -96,7 +96,7 @@ const server = http.createServer((req, res) => {
             });
         }
     } else if (parsedUrl.pathname === '/api/devices') {
-        const devices = querySQLite(`SELECT DISTINCT IFNULL(device_id, 'MacBookPro-Local') as device FROM erlik_heartbeats ORDER BY device ASC;`);
+        const devices = querySQLite(`SELECT DISTINCT IFNULL(device_id, 'Halil Mac mini') as device FROM erlik_heartbeats ORDER BY device ASC;`);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(devices.map(d => d.device)));
     } else if (parsedUrl.pathname === '/api/stats') {
@@ -123,8 +123,27 @@ const server = http.createServer((req, res) => {
         const afkRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND ${baseFilter};`);
         const countRes = querySQLite(`SELECT COUNT(*) as total FROM erlik_heartbeats WHERE ${baseFilter};`);
 
-        // AI Assisted & Agentic coding metrics
-        const aiCodingRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} AND (category LIKE '%AI%' OR category LIKE '%AGI%' OR app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%Codex%' OR app_name LIKE '%Windsurf%' OR app_name LIKE '%Devin%' OR app_name LIKE '%Aider%' OR app_name LIKE '%Hermes%' OR app_name LIKE '%OpenClaw%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Copilot%');`);
+        // Detailed AGI Agents Breakdown (Duration, Estimated Tokens, Process Cost)
+        const agentRows = querySQLite(`SELECT app_name, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} AND (category LIKE '%AI%' OR category LIKE '%AGI%' OR app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%Codex%' OR app_name LIKE '%Windsurf%' OR app_name LIKE '%Devin%' OR app_name LIKE '%Aider%' OR app_name LIKE '%Hermes%' OR app_name LIKE '%OpenClaw%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Copilot%') GROUP BY app_name ORDER BY total_sec DESC;`);
+        
+        // Estimation heuristics: ~35 tokens generated/processed per active second during agent work, ~$0.003 per 1K tokens avg
+        const agentsBreakdown = agentRows.map(a => {
+            const tokens = Math.round(a.total_sec * 35);
+            const cost = (tokens / 1000) * 0.003;
+            return {
+                agent: a.app_name,
+                duration_seconds: a.total_sec,
+                tokens: tokens,
+                cost_usd: Number(cost.toFixed(2))
+            };
+        });
+
+        const totalActiveSec = activeRes[0] ? activeRes[0].total : 0;
+        const totalAiSec = agentsBreakdown.reduce((acc, x) => acc + x.duration_seconds, 0);
+        const humanSec = Math.max(0, totalActiveSec - totalAiSec);
+        const aiRatio = totalActiveSec > 0 ? Math.round((totalAiSec / totalActiveSec) * 100) : 0;
+        const totalTokens = agentsBreakdown.reduce((acc, x) => acc + x.tokens, 0);
+        const totalCostUsd = Number(agentsBreakdown.reduce((acc, x) => acc + x.cost_usd, 0).toFixed(2));
 
         const categories = querySQLite(`SELECT category, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} GROUP BY category ORDER BY total_sec DESC;`);
         const apps = querySQLite(`SELECT app_name, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} GROUP BY app_name ORDER BY total_sec DESC LIMIT 10;`);
@@ -135,16 +154,21 @@ const server = http.createServer((req, res) => {
         // Daily Activity Streak
         const streakDays = querySQLite(`SELECT strftime('%Y-%m-%d', timestamp) as day, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= datetime('now', '-14 days') GROUP BY day ORDER BY day ASC;`);
 
-        const recent = querySQLite(`SELECT timestamp, IFNULL(device_id, 'MacBookPro-Local') as device_id, app_name, category, IFNULL(project_name, 'Genel') as project_name, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds FROM erlik_heartbeats WHERE ${baseFilter} ORDER BY id DESC LIMIT 25;`);
+        const recent = querySQLite(`SELECT timestamp, IFNULL(device_id, 'Halil Mac mini') as device_id, app_name, category, IFNULL(project_name, 'Genel') as project_name, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds FROM erlik_heartbeats WHERE ${baseFilter} ORDER BY id DESC LIMIT 25;`);
         const timeline = querySQLite(`SELECT ${timeGroup} as period, SUM(duration_seconds) as duration FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} GROUP BY period ORDER BY period ASC;`);
 
-        const devices = querySQLite(`SELECT DISTINCT IFNULL(device_id, 'MacBookPro-Local') as device FROM erlik_heartbeats ORDER BY device ASC;`);
+        const devices = querySQLite(`SELECT DISTINCT IFNULL(device_id, 'Halil Mac mini') as device FROM erlik_heartbeats ORDER BY device ASC;`);
 
         const cfg = loadConfig();
         const payload = {
-            total_active_seconds: activeRes[0] ? activeRes[0].total : 0,
+            total_active_seconds: totalActiveSec,
             total_afk_seconds: afkRes[0] ? afkRes[0].total : 0,
-            total_ai_coding_seconds: aiCodingRes[0] ? aiCodingRes[0].total : 0,
+            total_ai_coding_seconds: totalAiSec,
+            human_seconds: humanSec,
+            ai_ratio_pct: aiRatio,
+            total_estimated_tokens: totalTokens,
+            total_estimated_cost_usd: totalCostUsd,
+            agents_breakdown: agentsBreakdown,
             total_events: countRes[0] ? countRes[0].total : 0,
             daily_goal_hours: cfg.daily_goal_hours || 4,
             selected_device: device || 'all',

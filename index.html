@@ -175,6 +175,49 @@
             </div>
         </div>
 
+        <!-- AGI & Autonomous Agent Cost Cockpit -->
+        <div class="glass rounded-2xl border border-purple-500/30 p-5 space-y-4 bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/20">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-500/20 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🤖</span>
+                    <div>
+                        <h2 id="lblAgiCockpitTitle" class="text-sm font-bold text-purple-200 flex items-center gap-2">
+                            AGI & Autonomous Agent Harcama Kokpiti
+                            <span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full font-mono">Token & Cost Telemetry</span>
+                        </h2>
+                        <p id="lblAgiCockpitSub" class="text-[11px] text-slate-400">Yapay zekâ ajanları (Antigravity, Cursor, Claude, Hermes, OpenClaw) ile eşzamanlı çalışma, tahmini token çıktısı ve harcama dökümü</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-mono">
+                    <span class="text-slate-400">Tahmini Maliyet:</span>
+                    <span id="metricAgiCost" class="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Human vs Synthetic Code Ratio Bar -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between text-xs font-medium">
+                    <span class="text-sky-300 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                        <span id="lblHumanWork">İnsan / Manuel Geliştirme:</span> <b id="valHumanPct" class="font-mono text-white">100%</b>
+                    </span>
+                    <span class="text-purple-300 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                        <span id="lblAiWork">Sentetik / AGI Eşlikli:</span> <b id="valAiPct" class="font-mono text-white">0%</b>
+                    </span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2.5 flex overflow-hidden p-0.5 border border-slate-700/60">
+                    <div id="barHuman" class="bg-gradient-to-r from-sky-500 to-sky-400 h-full rounded-l-full transition-all duration-500" style="width: 100%"></div>
+                    <div id="barAi" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-r-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Agent Breakdown Grid -->
+            <div id="agentBreakdownGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-2">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+
         <!-- Live Window Activity Feed -->
         <div class="glass rounded-2xl border border-slate-800/80 p-5 space-y-4">
             <div class="flex items-center justify-between">
@@ -791,6 +834,40 @@
                         </div>
                     `;
                 }).join('') || `<p class="text-xs text-slate-500">${t.noApps}</p>`;
+
+                // Render AGI Cockpit & Cost Metrics
+                if (document.getElementById('metricAgiCost')) {
+                    document.getElementById('metricAgiCost').innerText = '$' + (data.total_estimated_cost_usd || 0).toFixed(2);
+                    const aiPct = data.ai_ratio_pct || 0;
+                    const humanPct = 100 - aiPct;
+                    document.getElementById('valHumanPct').innerText = humanPct + '% (' + fmtDuration(data.human_seconds || 0) + ')';
+                    document.getElementById('valAiPct').innerText = aiPct + '% (' + fmtDuration(data.total_ai_coding_seconds || 0) + ')';
+                    document.getElementById('barHuman').style.width = humanPct + '%';
+                    document.getElementById('barAi').style.width = aiPct + '%';
+
+                    const agiGrid = document.getElementById('agentBreakdownGrid');
+                    if (agiGrid) {
+                        agiGrid.innerHTML = (data.agents_breakdown || []).map(ag => `
+                            <div class="bg-slate-900/80 border border-purple-500/20 rounded-xl p-2.5 flex flex-col justify-between hover:border-purple-500/50 transition">
+                                <div class="flex items-center justify-between gap-1">
+                                    <span class="text-xs font-bold text-slate-200 truncate" title="${ag.agent}">${ag.agent}</span>
+                                    <span class="text-[9px] px-1 py-0.2 bg-purple-500/20 text-purple-300 rounded font-mono font-semibold">AGI</span>
+                                </div>
+                                <div class="mt-2 space-y-0.5">
+                                    <div class="text-[11px] font-mono font-semibold text-sky-400">${fmtDuration(ag.duration_seconds)}</div>
+                                    <div class="text-[10px] font-mono text-slate-400 flex justify-between">
+                                        <span>Tokens:</span>
+                                        <span class="text-slate-200">~${(ag.tokens / 1000).toFixed(1)}k</span>
+                                    </div>
+                                    <div class="text-[10px] font-mono text-slate-400 flex justify-between">
+                                        <span>Cost:</span>
+                                        <span class="text-emerald-400 font-semibold">$${ag.cost_usd}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('') || `<p class="text-xs text-slate-500 col-span-full">Seçili zaman aralığında aktif AGI ajanı kaydı yok.</p>`;
+                    }
+                }
 
                 // Render Table with Device Badge & Git Branch
                 const feed = document.getElementById('recentFeed');
