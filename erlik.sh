@@ -12,7 +12,7 @@ case "$1" in
         node "$DIR/erlik_web.js" > "$DIR/web.log" 2>&1 &
         "$DIR/erlik-menubar" > "$DIR/menubar.log" 2>&1 &
         
-        echo "🐺 ERLİK Native Activity & Focus Intelligence v3.0 başlatıldı!"
+        echo "🐺 ERLİK Native Activity & Focus Intelligence v3.2 başlatıldı!"
         echo "📊 Modern Dashboard: http://localhost:5757"
         echo "🍎 macOS Menubar Widget devrede: Menü çubuğundaki kurt simgesini kontrol edin!"
         ;;
