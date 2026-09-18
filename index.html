@@ -60,6 +60,14 @@
                     </button>
                 </div>
 
+                <!-- Device Selector -->
+                <div class="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1 text-xs">
+                    <span class="text-slate-400 mr-1.5 hidden sm:inline">💻</span>
+                    <select id="deviceSelector" onchange="onDeviceChange(this.value)" class="bg-transparent text-slate-200 font-medium focus:outline-none cursor-pointer">
+                        <option value="all" class="bg-slate-900 text-slate-200">Tüm Cihazlar (All Macs)</option>
+                    </select>
+                </div>
+
                 <!-- Range Selector -->
                 <div class="flex bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs">
                     <button onclick="setTimeRange('day')" id="btn-day" class="px-3 py-1.5 rounded-lg font-medium transition bg-sky-500 text-white">Günlük</button>
@@ -178,6 +186,7 @@
                     <thead class="bg-slate-800/60 uppercase text-[10px] font-semibold text-slate-400 border-b border-slate-700/60">
                         <tr>
                             <th id="thTime" class="py-2.5 px-3">Zaman</th>
+                            <th id="thDevice" class="py-2.5 px-3">Cihaz</th>
                             <th id="thProject" class="py-2.5 px-3">Proje</th>
                             <th id="thBranch" class="py-2.5 px-3">Git Branch</th>
                             <th id="thApp" class="py-2.5 px-3">Uygulama / IDE</th>
@@ -311,11 +320,13 @@
                 sectionApps: "⚡ IDE, Ajan & Uygulama Sıralaması",
                 sectionFeed: "Canlı Pencere & Çalışma Akışı",
                 thTime: "Zaman",
+                thDevice: "Cihaz",
                 thProject: "Proje",
                 thBranch: "Git Branch",
                 thApp: "Uygulama / IDE",
                 thTitle: "Pencere Başlığı",
                 thDuration: "Süre",
+                deviceAll: "Tüm Cihazlar (All Macs)",
                 noProjects: "Proje kaydı yok.",
                 noApps: "Kayıt yok.",
                 pomoFocusMode: "🔥 ODAKLANMA MODU",
@@ -368,11 +379,13 @@
                 sectionApps: "⚡ IDE, Agents & App Ranking",
                 sectionFeed: "Live Window & Activity Feed",
                 thTime: "Time",
+                thDevice: "Device",
                 thProject: "Project",
                 thBranch: "Git Branch",
                 thApp: "App / IDE",
                 thTitle: "Window Title",
                 thDuration: "Duration",
+                deviceAll: "All Macs",
                 noProjects: "No project records found.",
                 noApps: "No activity records found.",
                 pomoFocusMode: "🔥 FOCUS MODE",
@@ -425,11 +438,13 @@
                 sectionApps: "⚡ IDE, Agenten & Applicatieranglijst",
                 sectionFeed: "Live Venster- & Werkstroom",
                 thTime: "Tijd",
+                thDevice: "Apparaat",
                 thProject: "Project",
                 thBranch: "Git Branch",
                 thApp: "App / IDE",
                 thTitle: "Venstertitel",
                 thDuration: "Duur",
+                deviceAll: "Alle Macs",
                 noProjects: "Geen projectrecords gevonden.",
                 noApps: "Geen activiteitsrecords gevonden.",
                 pomoFocusMode: "🔥 FOCUSMODUS",
@@ -501,6 +516,7 @@
             document.getElementById('lblSectionApps').innerHTML = `<span>⚡</span> ${t.sectionApps}`;
             document.getElementById('lblSectionFeed').innerText = t.sectionFeed;
             document.getElementById('thTime').innerText = t.thTime;
+            if (document.getElementById('thDevice')) document.getElementById('thDevice').innerText = t.thDevice;
             document.getElementById('thProject').innerText = t.thProject;
             document.getElementById('thBranch').innerText = t.thBranch;
             document.getElementById('thApp').innerText = t.thApp;
@@ -700,11 +716,30 @@
             }
         }
 
+        let currentDevice = 'all';
+
+        function onDeviceChange(val) {
+            currentDevice = val;
+            fetchStats();
+        }
+
         async function fetchStats() {
             try {
                 const t = translations[currentLang] || translations.tr;
-                const res = await fetch('/api/stats?range=' + currentRange);
+                const res = await fetch(`/api/stats?range=${currentRange}&device=${encodeURIComponent(currentDevice)}`);
                 const data = await res.json();
+
+                // Update Device Selector dropdown options if needed
+                const devSelect = document.getElementById('deviceSelector');
+                if (devSelect && data.devices && data.devices.length > 0) {
+                    const currentVal = devSelect.value || currentDevice;
+                    let opts = `<option value="all" class="bg-slate-900 text-slate-200">${t.deviceAll || 'Tüm Cihazlar'}</option>`;
+                    data.devices.forEach(d => {
+                        opts += `<option value="${d}" class="bg-slate-900 text-slate-200" ${d === currentVal ? 'selected' : ''}>💻 ${d}</option>`;
+                    });
+                    devSelect.innerHTML = opts;
+                    devSelect.value = currentVal;
+                }
 
                 document.getElementById('metricTotal').innerText = fmtDuration(data.total_active_seconds);
                 document.getElementById('metricAiCoding').innerText = fmtDuration(data.total_ai_coding_seconds || 0);
@@ -757,11 +792,12 @@
                     `;
                 }).join('') || `<p class="text-xs text-slate-500">${t.noApps}</p>`;
 
-                // Render Table with Git Branch
+                // Render Table with Device Badge & Git Branch
                 const feed = document.getElementById('recentFeed');
                 feed.innerHTML = (data.recent || []).map(r => `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="py-2 px-3 font-mono text-slate-400 text-[11px]">${r.timestamp.split(' ')[1] || r.timestamp}</td>
+                        <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20">${r.device_id || 'Mac'}</span></td>
                         <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${r.project_name}</span></td>
                         <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-mono text-purple-300 bg-purple-500/10 border border-purple-500/20">${r.git_branch || '-'}</span></td>
                         <td class="py-2 px-3 font-semibold text-sky-400">${r.app_name}</td>

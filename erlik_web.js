@@ -95,8 +95,13 @@ const server = http.createServer((req, res) => {
                 }
             });
         }
+    } else if (parsedUrl.pathname === '/api/devices') {
+        const devices = querySQLite(`SELECT DISTINCT IFNULL(device_id, 'MacBookPro-Local') as device FROM erlik_heartbeats ORDER BY device ASC;`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(devices.map(d => d.device)));
     } else if (parsedUrl.pathname === '/api/stats') {
         const range = parsedUrl.searchParams.get('range') || 'day';
+        const device = parsedUrl.searchParams.get('device') || '';
         let timeFilter = "timestamp >= datetime('now', '-1 day')";
         let timeGroup = "strftime('%H:00', timestamp)";
         
@@ -108,24 +113,32 @@ const server = http.createServer((req, res) => {
             timeGroup = "strftime('%Y-%m-%d', timestamp)";
         }
 
-        const activeRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter};`);
-        const afkRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND ${timeFilter};`);
-        const countRes = querySQLite(`SELECT COUNT(*) as total FROM erlik_heartbeats WHERE ${timeFilter};`);
+        let baseFilter = timeFilter;
+        if (device && device !== 'all') {
+            const escapedDev = device.replace(/'/g, "''");
+            baseFilter += ` AND device_id = '${escapedDev}'`;
+        }
+
+        const activeRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter};`);
+        const afkRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND ${baseFilter};`);
+        const countRes = querySQLite(`SELECT COUNT(*) as total FROM erlik_heartbeats WHERE ${baseFilter};`);
 
         // AI Assisted & Agentic coding metrics
-        const aiCodingRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} AND (category LIKE '%AI%' OR category LIKE '%AGI%' OR app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%Codex%' OR app_name LIKE '%Windsurf%' OR app_name LIKE '%Devin%' OR app_name LIKE '%Aider%' OR app_name LIKE '%Hermes%' OR app_name LIKE '%OpenClaw%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Copilot%');`);
+        const aiCodingRes = querySQLite(`SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} AND (category LIKE '%AI%' OR category LIKE '%AGI%' OR app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%Codex%' OR app_name LIKE '%Windsurf%' OR app_name LIKE '%Devin%' OR app_name LIKE '%Aider%' OR app_name LIKE '%Hermes%' OR app_name LIKE '%OpenClaw%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Copilot%');`);
 
-        const categories = querySQLite(`SELECT category, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY category ORDER BY total_sec DESC;`);
-        const apps = querySQLite(`SELECT app_name, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY app_name ORDER BY total_sec DESC LIMIT 10;`);
+        const categories = querySQLite(`SELECT category, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} GROUP BY category ORDER BY total_sec DESC;`);
+        const apps = querySQLite(`SELECT app_name, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} GROUP BY app_name ORDER BY total_sec DESC LIMIT 10;`);
         
         // Projects breakdown with Git branches
-        const projects = querySQLite(`SELECT IFNULL(project_name, 'Genel') as project, IFNULL(git_branch, '-') as branch, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY project ORDER BY total_sec DESC LIMIT 8;`);
+        const projects = querySQLite(`SELECT IFNULL(project_name, 'Genel') as project, IFNULL(git_branch, '-') as branch, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} GROUP BY project ORDER BY total_sec DESC LIMIT 8;`);
 
         // Daily Activity Streak
         const streakDays = querySQLite(`SELECT strftime('%Y-%m-%d', timestamp) as day, SUM(duration_seconds) as total_sec FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= datetime('now', '-14 days') GROUP BY day ORDER BY day ASC;`);
 
-        const recent = querySQLite(`SELECT timestamp, app_name, category, IFNULL(project_name, 'Genel') as project_name, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds FROM erlik_heartbeats WHERE ${timeFilter} ORDER BY id DESC LIMIT 25;`);
-        const timeline = querySQLite(`SELECT ${timeGroup} as period, SUM(duration_seconds) as duration FROM erlik_heartbeats WHERE is_afk = 0 AND ${timeFilter} GROUP BY period ORDER BY period ASC;`);
+        const recent = querySQLite(`SELECT timestamp, IFNULL(device_id, 'MacBookPro-Local') as device_id, app_name, category, IFNULL(project_name, 'Genel') as project_name, IFNULL(git_branch, '-') as git_branch, window_title, duration_seconds FROM erlik_heartbeats WHERE ${baseFilter} ORDER BY id DESC LIMIT 25;`);
+        const timeline = querySQLite(`SELECT ${timeGroup} as period, SUM(duration_seconds) as duration FROM erlik_heartbeats WHERE is_afk = 0 AND ${baseFilter} GROUP BY period ORDER BY period ASC;`);
+
+        const devices = querySQLite(`SELECT DISTINCT IFNULL(device_id, 'MacBookPro-Local') as device FROM erlik_heartbeats ORDER BY device ASC;`);
 
         const cfg = loadConfig();
         const payload = {
@@ -134,6 +147,8 @@ const server = http.createServer((req, res) => {
             total_ai_coding_seconds: aiCodingRes[0] ? aiCodingRes[0].total : 0,
             total_events: countRes[0] ? countRes[0].total : 0,
             daily_goal_hours: cfg.daily_goal_hours || 4,
+            selected_device: device || 'all',
+            devices: devices.map(d => d.device),
             categories: categories,
             apps: apps,
             projects: projects,

@@ -11,4 +11,4 @@ __pycache__/
 *.pyc
 erlik-daemon
 erlik-menubar
-
+sync/

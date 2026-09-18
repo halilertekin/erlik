@@ -223,6 +223,7 @@ class ErlikDB {
         CREATE TABLE IF NOT EXISTS erlik_heartbeats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            device_id TEXT DEFAULT 'MacBookPro-Local',
             app_name TEXT NOT NULL,
             bundle_id TEXT NOT NULL,
             category TEXT NOT NULL,
@@ -233,29 +234,32 @@ class ErlikDB {
             is_afk INTEGER DEFAULT 0
         );
         CREATE INDEX IF NOT EXISTS idx_erlik_time ON erlik_heartbeats(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_erlik_device ON erlik_heartbeats(device_id);
         CREATE INDEX IF NOT EXISTS idx_erlik_app ON erlik_heartbeats(app_name);
         CREATE INDEX IF NOT EXISTS idx_erlik_project ON erlik_heartbeats(project_name);
         CREATE INDEX IF NOT EXISTS idx_erlik_category ON erlik_heartbeats(category);
         """
         sqlite3_exec(db, sql, nil, nil, nil)
         sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN git_branch TEXT DEFAULT '-';", nil, nil, nil)
+        sqlite3_exec(db, "ALTER TABLE erlik_heartbeats ADD COLUMN device_id TEXT DEFAULT 'MacBookPro-Local';", nil, nil, nil)
     }
 
-    func record(app: String, bundleId: String, project: String, branch: String, title: String, duration: Int, isAfk: Bool) {
+    func record(app: String, bundleId: String, project: String, branch: String, title: String, duration: Int, isAfk: Bool, deviceId: String = Host.current().localizedName ?? "MacBook") {
         let cat = isAfk ? "Boşta (AFK)" : categorizeApp(bundleId: bundleId, appName: app)
         let proj = isAfk ? "-" : project
         let br = isAfk ? "-" : branch
-        let sql = "INSERT INTO erlik_heartbeats (app_name, bundle_id, category, project_name, git_branch, window_title, duration_seconds, is_afk) VALUES (?, ?, ?, ?, ?, ?, ?, ?);"
+        let sql = "INSERT INTO erlik_heartbeats (device_id, app_name, bundle_id, category, project_name, git_branch, window_title, duration_seconds, is_afk) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"
         var stmt: OpaquePointer?
         if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
-            sqlite3_bind_text(stmt, 1, (app as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(stmt, 2, (bundleId as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(stmt, 3, (cat as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(stmt, 4, (proj as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(stmt, 5, (br as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(stmt, 6, (title as NSString).utf8String, -1, nil)
-            sqlite3_bind_int(stmt, 7, Int32(duration))
-            sqlite3_bind_int(stmt, 8, isAfk ? 1 : 0)
+            sqlite3_bind_text(stmt, 1, (deviceId as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 2, (app as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 3, (bundleId as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 4, (cat as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 5, (proj as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 6, (br as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 7, (title as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(stmt, 8, Int32(duration))
+            sqlite3_bind_int(stmt, 9, isAfk ? 1 : 0)
             sqlite3_step(stmt)
         }
         sqlite3_finalize(stmt)
