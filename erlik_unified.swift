@@ -177,6 +177,37 @@ func getActiveWindowName(appName: String, pid: pid_t? = nil) -> String {
     return ""
 }
 
+func detectActiveAgentOrRemote() -> (appName: String, bundleId: String, project: String)? {
+    // 1. Check active SSH or remote tunnel/terminal multiplexer sessions
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+    task.arguments = ["-f", "sshd-session|cmux-cua|tmux"]
+    let pipe = Pipe()
+    task.standardOutput = pipe
+    try? task.run()
+    task.waitUntilExit()
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    let pids = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if !pids.isEmpty {
+        return ("Remote Dev (SSH/cmux)", "com.apple.remote-session", "Remote")
+    }
+
+    // 2. Check running AI Agents (Claude Code, Codex, Antigravity, OpenClaw, ZCode)
+    let agentPatterns = ["claude", "codex", "antigravity", "zcode", "openclaw"]
+    let apps = NSWorkspace.shared.runningApplications
+    for app in apps {
+        let name = (app.localizedName ?? "").lowercased()
+        let bId = (app.bundleIdentifier ?? "").lowercased()
+        for pat in agentPatterns {
+            if name.contains(pat) || bId.contains(pat) {
+                let actualName = app.localizedName ?? pat.capitalized
+                return (actualName, app.bundleIdentifier ?? "ai.agent.\(pat)", "AI Dev")
+            }
+        }
+    }
+    return nil
+}
+
 // MARK: - SQLite Manager
 class ErlikDB {
     var db: OpaquePointer?
@@ -727,7 +758,7 @@ class ErlikApp: NSObject, NSApplicationDelegate {
 
     func trackActivity() {
         let idleSecs = getIdleSeconds()
-        let isAfk = idleSecs >= 120.0
+        var isAfk = idleSecs >= 120.0
 
         var appName = "AFK / Dinlenme"
         var bundleId = "com.apple.idle"
@@ -741,6 +772,16 @@ class ErlikApp: NSObject, NSApplicationDelegate {
                 bundleId = front.bundleIdentifier ?? "unknown.app"
                 windowTitle = getActiveWindowName(appName: appName, pid: front.processIdentifier)
                 projName = detectProject(appName: appName, windowTitle: windowTitle)
+                branchName = detectGitBranch(project: projName)
+            }
+        } else {
+            // Klavye/fare hareketsiz ancak uzaktan SSH/cmux baglantisi veya arkaplanda AI ajani calisiyorsa AFK sayma!
+            if let remote = detectActiveAgentOrRemote() {
+                isAfk = false
+                appName = remote.appName
+                bundleId = remote.bundleId
+                projName = remote.project
+                windowTitle = "Arkaplan / Uzaktan Oturum Aktif (\(remote.appName))"
                 branchName = detectGitBranch(project: projName)
             }
         }
