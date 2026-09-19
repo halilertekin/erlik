@@ -1,0 +1,12 @@
+name = "erlik"
+main = "worker.js"
+compatibility_date = "2024-09-19"
+
+# Deploy to erlik.ertekin.workers.dev
+workers_dev = true
+
+# Custom routes for erlik.be once DNS points to Cloudflare
+routes = [
+  { pattern = "erlik.be/*", zone_name = "erlik.be" },
+  { pattern = "www.erlik.be/*", zone_name = "erlik.be" }
+]

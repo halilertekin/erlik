@@ -12,3 +12,7 @@ __pycache__/
 erlik-daemon
 erlik-menubar
 sync/
+.wrangler/
+landing/logo_base64.txt
+landing/logo_thumb.jpg
+
