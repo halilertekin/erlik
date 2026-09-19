@@ -795,10 +795,16 @@ class ErlikApp: NSObject, NSApplicationDelegate {
                 mins = tot / 60
             }
 
-            let hrs = Double(mins) / 60.0
             let hrUnit = self.currentLang == .nl ? "u" : (self.currentLang == .en ? "h" : "sa")
             let minUnit = self.currentLang == .nl ? "m" : (self.currentLang == .en ? "m" : "dk")
-            let timeStr = mins > 90 ? String(format: "%.1f %@", hrs, hrUnit) : "\(mins) \(minUnit)"
+            let timeStr: String
+            if mins < 60 {
+                timeStr = "\(mins) \(minUnit)"
+            } else {
+                let h = mins / 60
+                let m = mins % 60
+                timeStr = m > 0 ? "\(h) \(hrUnit) \(m) \(minUnit)" : "\(h) \(hrUnit)"
+            }
 
             DispatchQueue.main.async {
                 if self.showHardwareMetrics {

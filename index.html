@@ -882,8 +882,9 @@
             if (secs < 60) return secs + ' ' + t.secUnit;
             const mins = Math.floor(secs / 60);
             if (mins < 60) return mins + ' ' + t.minUnit;
-            const hrs = (mins / 60).toFixed(1);
-            return hrs + ' ' + t.hourUnit;
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return m > 0 ? `${h} ${t.hourUnit} ${m} ${t.minUnit}` : `${h} ${t.hourUnit}`;
         }
 
         async function openMailModal() {
