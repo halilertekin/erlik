@@ -23,9 +23,11 @@ func categorizeApp(bundleId: String, appName: String) -> String {
        lowerBundle.contains("hermes") || lowerBundle.contains("openclaw") || lowerBundle.contains("claude") ||
        lowerBundle.contains("chatgpt") || lowerBundle.contains("copilot") || lowerBundle.contains("windsurf") ||
        lowerBundle.contains("devin") || lowerBundle.contains("aider") || lowerBundle.contains("ollama") ||
+       lowerBundle.contains("zcode") || lowerBundle.contains("opencodex") ||
        lowerBundle.contains("lmstudio") || lowerName.contains("antigravity") || lowerName.contains("cursor") ||
        lowerName.contains("codex") || lowerName.contains("hermes") || lowerName.contains("openclaw") ||
        lowerName.contains("claude") || lowerName.contains("chatgpt") || lowerName.contains("windsurf") ||
+       lowerName.contains("zcode") || lowerName.contains("opencodex") ||
        lowerName.contains("copilot") || lowerName.contains("aider") || lowerName.contains("gemini") {
         return AppCategory.agentic.rawValue
     }
@@ -177,33 +179,117 @@ func getActiveWindowName(appName: String, pid: pid_t? = nil) -> String {
     return ""
 }
 
-func detectActiveAgentOrRemote() -> (appName: String, bundleId: String, project: String)? {
+struct ActiveSessionInfo {
+    let name: String
+    let bundleId: String
+    let project: String
+    let pid: String
+    let type: String // "cli_agent", "app_agent", "remote"
+    let detail: String
+}
+
+func getLiveActiveSessions() -> [ActiveSessionInfo] {
+    var sessions: [ActiveSessionInfo] = []
+    var seen = Set<String>()
+
     // 1. Check active SSH or remote tunnel/terminal multiplexer sessions
-    let task = Process()
-    task.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-    task.arguments = ["-f", "sshd-session|cmux-cua|tmux"]
-    let pipe = Pipe()
-    task.standardOutput = pipe
-    try? task.run()
-    task.waitUntilExit()
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    let pids = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    if !pids.isEmpty {
-        return ("Remote Dev (SSH/cmux)", "com.apple.remote-session", "Remote")
+    let pgrepRemote = Process()
+    pgrepRemote.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+    pgrepRemote.arguments = ["-f", "sshd-session|cmux-cua|tmux"]
+    let pipeRemote = Pipe()
+    pgrepRemote.standardOutput = pipeRemote
+    try? pgrepRemote.run()
+    pgrepRemote.waitUntilExit()
+    let remoteData = pipeRemote.fileHandleForReading.readDataToEndOfFile()
+    let remotePids = String(data: remoteData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if !remotePids.isEmpty {
+        let firstPid = remotePids.components(separatedBy: .whitespacesAndNewlines).first ?? ""
+        sessions.append(ActiveSessionInfo(
+            name: "Remote Dev (SSH/cmux)",
+            bundleId: "com.apple.remote-session",
+            project: "Remote",
+            pid: firstPid,
+            type: "remote",
+            detail: "Aktif SSH / Multiplexer Oturumu"
+        ))
+        seen.insert("Remote Dev (SSH/cmux)")
     }
 
-    // 2. Check running AI Agents (Claude Code, Codex, Antigravity, OpenClaw, ZCode)
+    // 2. Check CLI Agents (Claude Code, Codex, Antigravity, OpenCodex, OpenClaw, ZCode)
+    let cliChecks: [(pattern: String, name: String, bundleId: String, detail: String)] = [
+        ("claude.*session-id", "Claude Code", "com.anthropic.claudecode", "Claude CLI Oturumu"),
+        ("zcode-cli", "ZCode", "dev.zcode.app", "ZCode CLI / Agent Worker"),
+        ("opencodex.*start", "OpenCodex", "io.opencodex", "OpenCodex CLI Worker"),
+        ("openclaw.*gateway", "OpenClaw", "ai.openclaw", "OpenClaw Gateway"),
+        ("codex.*app-server|codex-code-mode-host", "Codex", "com.openai.codex", "Codex Engine / App Server")
+    ]
+
+    for check in cliChecks {
+        let pTask = Process()
+        pTask.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        pTask.arguments = ["-f", check.pattern]
+        let pPipe = Pipe()
+        pTask.standardOutput = pPipe
+        try? pTask.run()
+        pTask.waitUntilExit()
+        let pData = pPipe.fileHandleForReading.readDataToEndOfFile()
+        let pidsStr = String(data: pData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !pidsStr.isEmpty && !seen.contains(check.name) {
+            seen.insert(check.name)
+            let firstPid = pidsStr.components(separatedBy: .whitespacesAndNewlines).first ?? ""
+            sessions.append(ActiveSessionInfo(
+                name: check.name,
+                bundleId: check.bundleId,
+                project: "AI Dev",
+                pid: firstPid,
+                type: "cli_agent",
+                detail: check.detail
+            ))
+        }
+    }
+
+    // 3. Check Running Desktop GUI Applications
     let agentPatterns = ["claude", "codex", "antigravity", "zcode", "openclaw"]
+    let ignorePatterns = ["helper", "networking", "autofill", "virtualmachine", "open and save panel", "crashpad", "safariplatformsupport"]
     let apps = NSWorkspace.shared.runningApplications
     for app in apps {
         let name = (app.localizedName ?? "").lowercased()
         let bId = (app.bundleIdentifier ?? "").lowercased()
+        
+        var shouldIgnore = false
+        for ig in ignorePatterns {
+            if name.contains(ig) || bId.contains(ig) {
+                shouldIgnore = true
+                break
+            }
+        }
+        if shouldIgnore { continue }
+
         for pat in agentPatterns {
             if name.contains(pat) || bId.contains(pat) {
                 let actualName = app.localizedName ?? pat.capitalized
-                return (actualName, app.bundleIdentifier ?? "ai.agent.\(pat)", "AI Dev")
+                if !seen.contains(actualName) {
+                    seen.insert(actualName)
+                    sessions.append(ActiveSessionInfo(
+                        name: actualName,
+                        bundleId: app.bundleIdentifier ?? "ai.agent.\(pat)",
+                        project: "AI Dev",
+                        pid: String(app.processIdentifier),
+                        type: "app_agent",
+                        detail: "Masaüstü Agent / IDE"
+                    ))
+                }
             }
         }
+    }
+
+    return sessions
+}
+
+func detectActiveAgentOrRemote() -> (appName: String, bundleId: String, project: String)? {
+    let active = getLiveActiveSessions()
+    if let first = active.first {
+        return (first.name, first.bundleId, first.project)
     }
     return nil
 }
@@ -518,7 +604,7 @@ class ErlikHTTPServer {
             let agentSql = """
             SELECT app_name, SUM(duration_seconds) as total_sec 
             FROM erlik_heartbeats 
-            WHERE is_afk = 0 AND \(baseFilter) AND (category LIKE '%AI%' OR category LIKE '%AGI%' OR app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%Codex%' OR app_name LIKE '%Windsurf%' OR app_name LIKE '%Devin%' OR app_name LIKE '%Aider%' OR app_name LIKE '%Hermes%' OR app_name LIKE '%OpenClaw%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Copilot%') 
+            WHERE is_afk = 0 AND \(baseFilter) AND (category LIKE '%AI%' OR category LIKE '%AGI%' OR app_name LIKE '%Antigravity%' OR app_name LIKE '%Cursor%' OR app_name LIKE '%Codex%' OR app_name LIKE '%Windsurf%' OR app_name LIKE '%Devin%' OR app_name LIKE '%Aider%' OR app_name LIKE '%Hermes%' OR app_name LIKE '%OpenClaw%' OR app_name LIKE '%ChatGPT%' OR app_name LIKE '%Claude%' OR app_name LIKE '%Copilot%' OR app_name LIKE '%ZCode%' OR app_name LIKE '%OpenCodex%' OR app_name LIKE '%Remote%') 
             GROUP BY app_name ORDER BY total_sec DESC;
             """
             let agentJson = db.queryJSON(sql: agentSql)
@@ -566,6 +652,17 @@ class ErlikHTTPServer {
                 devList = arr.compactMap { $0["device"] as? String }
             }
 
+            let liveSessions = getLiveActiveSessions().map { s -> [String: Any] in
+                return [
+                    "name": s.name,
+                    "bundle_id": s.bundleId,
+                    "project": s.project,
+                    "pid": s.pid,
+                    "type": s.type,
+                    "detail": s.detail
+                ]
+            }
+
             let payload: [String: Any] = [
                 "version": "3.2.3",
                 "local_device": ErlikDB.getComputerName(),
@@ -577,6 +674,7 @@ class ErlikHTTPServer {
                 "total_estimated_tokens": totalTokens,
                 "total_estimated_cost_usd": Double(String(format: "%.2f", totalCostUsd)) ?? 0.0,
                 "agents_breakdown": agentsBreakdown,
+                "active_sessions": liveSessions,
                 "total_events": totalCount,
                 "daily_goal_hours": 4,
                 "selected_device": device.isEmpty ? "all" : device,

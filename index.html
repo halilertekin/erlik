@@ -227,6 +227,20 @@
                 <!-- Injected via JavaScript -->
             </div>
 
+            <!-- Live Active Background & Remote Sessions -->
+            <div class="pt-3 border-t border-purple-500/20 space-y-2">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span id="lblActiveSessionsTitle">Arkaplanda & Uzaktan Çalışan Oturumlar</span>
+                    </h3>
+                    <span id="activeSessionsCountBadge" class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">0 Aktif</span>
+                </div>
+                <div id="activeSessionsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                    <!-- Injected via JavaScript -->
+                </div>
+            </div>
+
             <!-- Provider Token Plans, Peak Hours & Cooldown Matrix -->
             <div class="pt-3 border-t border-purple-500/20 space-y-2.5">
                 <div class="flex items-center justify-between">
@@ -584,7 +598,8 @@
                 secUnit: "sn",
                 minUnit: "dk",
                 hourUnit: "sa",
-                dayStreak: "Gün 🔥"
+                dayStreak: "Gün 🔥",
+                activeSessionsTitle: "Arkaplanda & Uzaktan Çalışan Oturumlar"
             },
             en: {
                 subtitle: "Apple Silicon Native Activity & Focus Intelligence",
@@ -643,7 +658,8 @@
                 secUnit: "s",
                 minUnit: "m",
                 hourUnit: "h",
-                dayStreak: "Day 🔥"
+                dayStreak: "Day 🔥",
+                activeSessionsTitle: "Background & Remote Active Sessions"
             },
             nl: {
                 subtitle: "Apple Silicon Native Activiteit & Focus Intelligentie",
@@ -702,7 +718,8 @@
                 secUnit: "s",
                 minUnit: "m",
                 hourUnit: "u",
-                dayStreak: "Dag 🔥"
+                dayStreak: "Dag 🔥",
+                activeSessionsTitle: "Actieve Achtergrond- & Externe Sessies"
             }
         };
 
@@ -755,6 +772,9 @@
             document.getElementById('thApp').innerText = t.thApp;
             document.getElementById('thTitle').innerText = t.thTitle;
             document.getElementById('thDuration').innerText = t.thDuration;
+            if (document.getElementById('lblActiveSessionsTitle') && t.activeSessionsTitle) {
+                document.getElementById('lblActiveSessionsTitle').innerText = t.activeSessionsTitle;
+            }
             
             // Modal Elements
             document.getElementById('pomodoroInfo').innerText = t.pomoDesc;
@@ -1110,6 +1130,37 @@
                                 </div>
                             </div>
                         `).join('') || `<p class="text-xs text-slate-500 col-span-full">Seçili zaman aralığında aktif AGI ajanı kaydı yok.</p>`;
+                    }
+
+                    // Render Active Background & Remote Sessions
+                    const sessList = document.getElementById('activeSessionsList');
+                    const sessBadge = document.getElementById('activeSessionsCountBadge');
+                    const activeSessions = data.active_sessions || [];
+                    if (sessBadge) {
+                        sessBadge.innerText = `${activeSessions.length} Aktif`;
+                    }
+                    if (sessList) {
+                        sessList.innerHTML = activeSessions.map(s => `
+                            <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-3 flex flex-col justify-between hover:border-emerald-500/60 transition shadow-sm">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <span class="w-2 h-2 rounded-full ${s.type === 'remote' ? 'bg-sky-400' : 'bg-emerald-400'} animate-pulse"></span>
+                                        <span class="text-xs font-bold text-slate-100 truncate">${s.name}</span>
+                                    </div>
+                                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${s.type === 'remote' ? 'bg-sky-500/10 text-sky-300 border border-sky-500/20' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'}">${s.type === 'remote' ? 'REMOTE' : 'ACTIVE AGENT'}</span>
+                                </div>
+                                <div class="mt-2.5 space-y-1 text-[11px] font-mono">
+                                    <div class="text-slate-400 flex justify-between">
+                                        <span>Detay:</span>
+                                        <span class="text-slate-200 truncate max-w-[140px]">${s.detail}</span>
+                                    </div>
+                                    <div class="text-slate-400 flex justify-between">
+                                        <span>PID / Durum:</span>
+                                        <span class="text-emerald-400 font-semibold">PID ${s.pid || '-'} (Çalışıyor)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('') || `<p class="text-xs text-slate-500 col-span-full py-2">Şu an arkaplanda çalışan aktif harici oturum yok.</p>`;
                     }
                 }
 
