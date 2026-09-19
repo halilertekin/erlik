@@ -536,7 +536,7 @@ class ErlikHTTPServer {
             }
 
             let payload: [String: Any] = [
-                "version": "3.2.2",
+                "version": "3.2.3",
                 "local_device": ErlikDB.getComputerName(),
                 "total_active_seconds": totalActive,
                 "total_afk_seconds": totalAfk,
