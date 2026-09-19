@@ -199,9 +199,8 @@ func getActiveWindowName(appName: String) -> String {
 // MARK: - SQLite Manager
 class ErlikDB {
     var db: OpaquePointer?
-    let lock = NSLock()
-
-    static func getComputerName() -> String {
+    let lock = NSRecursiveLock()
+    static let cachedComputerName: String = {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/sbin/scutil")
         task.arguments = ["--get", "ComputerName"]
@@ -214,12 +213,19 @@ class ErlikDB {
             return name
         }
         return Host.current().localizedName ?? "Mac"
+    }()
+
+    static func getComputerName() -> String {
+        return cachedComputerName
     }
 
     init(path: String) {
         if sqlite3_open(path, &db) != SQLITE_OK {
             print("❌ Erlik DB acilamadi: \(path)")
         }
+        sqlite3_busy_timeout(db, 5000)
+        sqlite3_exec(db, "PRAGMA journal_mode=WAL;", nil, nil, nil)
+        sqlite3_exec(db, "PRAGMA synchronous=NORMAL;", nil, nil, nil)
         setupTables()
     }
 
@@ -664,9 +670,11 @@ class ErlikApp: NSObject, NSApplicationDelegate {
         buildMenu()
         updateStatus()
 
-        // 1. Activity tracker loop (2 seconds)
+        // 1. Activity tracker loop (2 seconds) on background queue
         Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.trackActivity()
+            DispatchQueue.global(qos: .userInitiated).async {
+                self?.trackActivity()
+            }
         }
 
         // 2. Menubar status update loop (3 seconds)
@@ -806,28 +814,30 @@ class ErlikApp: NSObject, NSApplicationDelegate {
     }
 
     @objc func updateStatus() {
-        let diskStr = getDiskFreeSpace()
-        let ramStr = getRAMUsage()
+        // Calculate today's active seconds directly from SQLite without network lag on background queue
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+            let diskStr = self.getDiskFreeSpace()
+            let ramStr = self.getRAMUsage()
+            let activeJson = self.db.queryJSON(sql: "SELECT IFNULL(SUM(sec), 0) as total FROM (SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= datetime('now', 'localtime', 'start of day', 'utc') GROUP BY slot);")
+            var mins = 0
+            if let data = activeJson.data(using: .utf8),
+               let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+               let tot = arr.first?["total"] as? Int {
+                mins = tot / 60
+            }
 
-        // Calculate today's active seconds directly from SQLite without network lag
-        let activeJson = db.queryJSON(sql: "SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= date('now', 'start of day');")
-        var mins = 0
-        if let data = activeJson.data(using: .utf8),
-           let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-           let tot = arr.first?["total"] as? Int {
-            mins = tot / 60
-        }
+            let hrs = Double(mins) / 60.0
+            let hrUnit = self.currentLang == .nl ? "u" : (self.currentLang == .en ? "h" : "sa")
+            let minUnit = self.currentLang == .nl ? "m" : (self.currentLang == .en ? "m" : "dk")
+            let timeStr = mins > 90 ? String(format: "%.1f %@", hrs, hrUnit) : "\(mins) \(minUnit)"
 
-        let hrs = Double(mins) / 60.0
-        let hrUnit = currentLang == .nl ? "u" : (currentLang == .en ? "h" : "sa")
-        let minUnit = currentLang == .nl ? "m" : (currentLang == .en ? "m" : "dk")
-        let timeStr = mins > 90 ? String(format: "%.1f %@", hrs, hrUnit) : "\(mins) \(minUnit)"
-
-        DispatchQueue.main.async {
-            if self.showHardwareMetrics {
-                self.statusItem?.button?.title = "🐺 \(timeStr) | 💾 \(diskStr) | 🧠 \(ramStr)"
-            } else {
-                self.statusItem?.button?.title = "🐺 \(timeStr)"
+            DispatchQueue.main.async {
+                if self.showHardwareMetrics {
+                    self.statusItem?.button?.title = "🐺 \(timeStr) | 💾 \(diskStr) | 🧠 \(ramStr)"
+                } else {
+                    self.statusItem?.button?.title = "🐺 \(timeStr)"
+                }
             }
         }
     }
