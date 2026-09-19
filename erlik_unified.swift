@@ -2,6 +2,7 @@ import Cocoa
 import Foundation
 import Darwin
 import SQLite3
+import ApplicationServices
 
 // MARK: - App Category Resolver
 enum AppCategory: String {
@@ -143,56 +144,36 @@ func detectGitBranch(project: String) -> String {
     ]
     
     for c in candidates {
-        if fm.fileExists(atPath: "\(c)/.git") {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-            task.currentDirectoryURL = URL(fileURLWithPath: c)
-            task.arguments = ["branch", "--show-current"]
-            let pipe = Pipe()
-            task.standardOutput = pipe
-            do {
-                try task.run()
-                task.waitUntilExit()
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                if let branch = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !branch.isEmpty {
-                    return branch
-                }
-            } catch {}
+        let headPath = "\(c)/.git/HEAD"
+        if let content = try? String(contentsOfFile: headPath, encoding: .utf8) {
+            let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.hasPrefix("ref: refs/heads/") {
+                return String(trimmed.dropFirst("ref: refs/heads/".count))
+            } else if !trimmed.isEmpty {
+                return String(trimmed.prefix(7))
+            }
         }
     }
     return "-"
 }
 
-func getActiveWindowName(appName: String) -> String {
-    let escapedApp = appName.replacingOccurrences(of: "\"", with: "\\\"")
-    let script = """
-    tell application "System Events"
-        if exists (process "\(escapedApp)") then
-            tell process "\(escapedApp)"
-                if (count of windows) > 0 then
-                    return name of front window
-                end if
-            end tell
-        end if
-    end tell
-    return ""
-    """
-    
-    let task = Process()
-    task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-    task.arguments = ["-e", script]
-    let pipe = Pipe()
-    task.standardOutput = pipe
-    
-    do {
-        try task.run()
-        task.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        if let str = String(data: data, encoding: .utf8) {
-            return str.trimmingCharacters(in: .whitespacesAndNewlines)
+func getActiveWindowName(appName: String, pid: pid_t? = nil) -> String {
+    // 1. Ultra-fast native macOS Accessibility API (zero process spawning, ~0.1ms)
+    if let pid = pid, pid > 0 {
+        let axApp = AXUIElementCreateApplication(pid)
+        var window: AnyObject?
+        let result = AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &window)
+        if result == .success, let win = window {
+            var title: AnyObject?
+            let titleResult = AXUIElementCopyAttributeValue(win as! AXUIElement, kAXTitleAttribute as CFString, &title)
+            if titleResult == .success, let t = title as? String {
+                let cleanTitle = t.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !cleanTitle.isEmpty {
+                    return cleanTitle
+                }
+            }
         }
-    } catch {}
-    
+    }
     return ""
 }
 
@@ -461,23 +442,9 @@ class ErlikHTTPServer {
                 baseFilter += " AND device_id = '\(escaped)'"
             }
 
-            // Active and AFK duration calculation (capped at 60s per minute slot)
-            let activeSql = """
-            SELECT IFNULL(SUM(sec), 0) as total FROM (
-                SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec
-                FROM erlik_heartbeats 
-                WHERE is_afk = 0 AND \(baseFilter)
-                GROUP BY slot
-            );
-            """
-            let afkSql = """
-            SELECT IFNULL(SUM(sec), 0) as total FROM (
-                SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec
-                FROM erlik_heartbeats 
-                WHERE is_afk = 1 AND \(baseFilter)
-                GROUP BY slot
-            );
-            """
+            // Active and AFK duration calculation
+            let activeSql = "SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND \(baseFilter);"
+            let afkSql = "SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 1 AND \(baseFilter);"
             let activeJson = db.queryJSON(sql: activeSql)
             let afkJson = db.queryJSON(sql: afkSql)
             let countJson = db.queryJSON(sql: "SELECT COUNT(*) as total FROM erlik_heartbeats WHERE \(baseFilter);")
@@ -506,12 +473,8 @@ class ErlikHTTPServer {
             // Multi-device active union calculation when "all" is selected
             if device.isEmpty || device == "all" {
                 let unionJson = db.queryJSON(sql: """
-                    SELECT IFNULL(SUM(sec), 0) as total FROM (
-                        SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec
-                        FROM erlik_heartbeats 
-                        WHERE is_afk = 0 AND \(timeFilter)
-                        GROUP BY slot
-                    );
+                    SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats 
+                    WHERE is_afk = 0 AND \(timeFilter);
                 """)
                 if let data = unionJson.data(using: .utf8),
                    let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
@@ -776,7 +739,7 @@ class ErlikApp: NSObject, NSApplicationDelegate {
             if let front = NSWorkspace.shared.frontmostApplication {
                 appName = front.localizedName ?? "Bilinmeyen"
                 bundleId = front.bundleIdentifier ?? "unknown.app"
-                windowTitle = getActiveWindowName(appName: appName)
+                windowTitle = getActiveWindowName(appName: appName, pid: front.processIdentifier)
                 projName = detectProject(appName: appName, windowTitle: windowTitle)
                 branchName = detectGitBranch(project: projName)
             }
@@ -784,6 +747,11 @@ class ErlikApp: NSObject, NSApplicationDelegate {
 
         if appName == currentApp && windowTitle == currentTitle {
             accumulatedSeconds += 2
+            // Periodic flush every 30s to keep timeline smooth and prevent data loss on crashes
+            if accumulatedSeconds >= 30 {
+                db.record(app: currentApp, bundleId: currentBundle, project: currentProject, branch: currentBranch, title: currentTitle, duration: accumulatedSeconds, isAfk: currentApp.starts(with: "AFK"))
+                accumulatedSeconds = 0
+            }
         } else {
             if !currentApp.isEmpty && accumulatedSeconds > 0 {
                 db.record(app: currentApp, bundleId: currentBundle, project: currentProject, branch: currentBranch, title: currentTitle, duration: accumulatedSeconds, isAfk: currentApp.starts(with: "AFK"))
@@ -819,7 +787,7 @@ class ErlikApp: NSObject, NSApplicationDelegate {
             guard let self = self else { return }
             let diskStr = self.getDiskFreeSpace()
             let ramStr = self.getRAMUsage()
-            let activeJson = self.db.queryJSON(sql: "SELECT IFNULL(SUM(sec), 0) as total FROM (SELECT strftime('%Y-%m-%d %H:%M', timestamp) as slot, MIN(60, SUM(duration_seconds)) as sec FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= datetime('now', 'localtime', 'start of day', 'utc') GROUP BY slot);")
+            let activeJson = self.db.queryJSON(sql: "SELECT IFNULL(SUM(duration_seconds), 0) as total FROM erlik_heartbeats WHERE is_afk = 0 AND timestamp >= datetime('now', 'localtime', 'start of day', 'utc');")
             var mins = 0
             if let data = activeJson.data(using: .utf8),
                let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
